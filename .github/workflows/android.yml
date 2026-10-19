@@ -130,6 +130,17 @@ jobs:
           name: hudaway-apks
           path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
+      - name: Create GitHub Release v1.0.0 from main build
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            echo 'HudaWay v1.0.0 already exists; skipping release creation.'
+          else
+            gh release create v1.0.0 build/app/outputs/flutter-apk/*.apk --target "$GITHUB_SHA" --title "HudaWay v1.0.0" --notes "First stable Android release.\n\nFeatures:\n- Complete Quran\n- Prayer times\n- Adhan alarms\n- Qibla\n- Dhikr / Tasbeeh\n- Duas & Adhkar\n- Ramadan tools\n- Quran audio\n- Dark Muslim UI"
+          fi
       - name: Create GitHub Release for version tag
         if: startsWith(github.ref, 'refs/tags/v')
         env:
