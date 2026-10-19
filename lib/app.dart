@@ -219,56 +219,7 @@ class _AlarmSettingsPageState extends State<AlarmSettingsPage> {
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Adhan & Alarms')), body: ListView(padding: const EdgeInsets.all(18), children: [appBox(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Adhan sound', style: TextStyle(color: gold, fontWeight: FontWeight.bold)), RadioListTile<String>(value: 'adhan_kuwait', groupValue: sound, onChanged: (v) { if (v != null) _saveSound(v); }, title: const Text('Kuwait Adhan')), RadioListTile<String>(value: 'adhan_dubai', groupValue: sound, onChanged: (v) { if (v != null) _saveSound(v); }, title: const Text('Dubai Adhan')), RadioListTile<String>(value: 'adhan_fajr', groupValue: sound, onChanged: (v) { if (v != null) _saveSound(v); }, title: const Text('Fajr Adhan'))])), const SizedBox(height: 12), appBox(SwitchListTile(value: enabled, onChanged: (v) async { setState(() => enabled = v); await Preferences.setAlarmsEnabled(v); if (v) { await widget.alarms.refreshStoredSchedule(); } else { await widget.alarms.plugin.cancelAll(); } }, title: const Text('Prayer notifications'), subtitle: const Text('Schedule Fajr, Dhuhr, Asr, Maghrib and Isha'))), const SizedBox(height: 12), const Text('Allow notifications and exact alarms in Android settings for reliable Adhan alerts.', style: TextStyle(color: Colors.white54))]));
 }
 
-class MorePage extends StatefulWidget { final AlarmService alarms; const MorePage({super.key, required this.alarms}); @override State<MorePage> createState() => _MorePageState(); }
-class _MorePageState extends State<MorePage> {
-  String method = 'Muslim World League'; String madhab = 'Shafi'; bool lockCalendar = false;
-  @override void initState() { super.initState(); _load(); }
-  Future<void> _load() async { final m = await Preferences.prayerMethod(); final ma = await Preferences.madhab(); final l = await Preferences.lockCalendar(); if (mounted) setState(() { method = m; madhab = ma; lockCalendar = l; }); }
-  Future<void> _method(String v) async { await Preferences.setPrayerMethod(v); setState(() => method = v); await widget.alarms.refreshStoredSchedule(); }
-  Future<void> _madhab(String v) async { await Preferences.setMadhab(v); setState(() => madhab = v); await widget.alarms.refreshStoredSchedule(); }
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(18),
-      children: [
-        Row(children: [
-          const Expanded(child: Text('Prayer Times', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
-          IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.refresh, color: gold)),
-        ]),
-        appBox(Row(children: [
-          const Icon(Icons.location_on, color: gold),
-          const SizedBox(width: 10),
-          Expanded(child: Text(place, style: const TextStyle(fontWeight: FontWeight.bold))),
-          IconButton(onPressed: load, icon: const Icon(Icons.my_location)),
-        ])),
-        const SizedBox(height: 12),
-        if (prayers == null)
-          appBox(Column(children: [
-            const Text('Allow location to calculate your local prayer times.', textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: hloading ? null : load, child: Text(loading ? 'Loading…' : 'Use my location')),
-          ]))
-        else
-          ...prayers!.map((p) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: appBox(Row(children: [
-                  Icon(p.name == 'Sunrise' ?!cons.wb_sunny : Icons.mosque, color: gold),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text('${p.name}\n${p.arabic}')),
-                  Text(DateFormat('h:mm a').format(p.time), style: const TextStyle(color: gold, fontSize: 17, fontWeight: FontWeight.bold)),
-                ])),
-              )),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AlarmSettingsPage(alarms: widget.alarms))),
-          icon: const Icon(Icons.notifications_active),
-          label: const Text('Adhan & Alarm Settings'),
-        ),
-      ],
-    );
-  }
-}
-
+class MorePage extends StatelessWidget { final AlarmService alarms; const MorePage({super.key,required this.alarms}); @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(18),children:[Row(children:[const BrandMark(size:56),const SizedBox(width:12),const Text('Settings',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900))]),const SizedBox(height:18),appBox(const Text('Prayer times use your GPS location and the selected calculation method.')),ListTile(leading:const Icon(Icons.notifications_active,color:gold),title:const Text('Adhan & Alarm Settings'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms)))),ListTile(leading:const Icon(Icons.explore,color:gold),title:const Text('Qibla Finder'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const QiblaPage()))),ListTile(leading:const Icon(Icons.favorite,color:gold),title:const Text('Duas & Adhkar'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const DuasPage()))),ListTile(leading:const Icon(Icons.nightlight,color:gold),title:const Text('Ramadan'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const RamadanPage()))) ]); }
 class HijriDate { final int day, month, year; final String monthName; const HijriDate(this.day, this.month, this.year, this.monthName); String get display => '$day $monthName $year AH'; }
 class HijriService {
   static Future<HijriDate?> today() async {
