@@ -1,6 +1,6 @@
-name: numelixa_quran
+name: hudaway
 
-description: Numelixa Quran — a premium Muslim companion with Quran, prayer times, alarms, dhikr, duas and Qibla.
+description: HudaWay — a premium Muslim companion with Quran, prayer times, Qibla, duas, dhikr, Ramadan tools and Quran audio.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -20,15 +20,26 @@ dependencies:
   timezone: ^0.11.1
   flutter_timezone: ^5.1.1
   flutter_svg: ^2.2.0
+  flutter_compass: ^0.8.1
+  audioplayers: ^6.8.1
   intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/brand/logo.svg
+    - assets/brand/icon.png
     - assets/data/quran.json
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/brand/icon.png
+  adaptive_icon_background: '#061A14'
+  adaptive_icon_foreground: assets/brand/icon.png
