@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Repair upgraded Dart sources
+      - name: Repair Dart sources
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -26,14 +26,12 @@ jobs:
           lines = app.read_text().splitlines()
           target = next((i for i, line in enumerate(lines) if line.strip().startswith('@override Widget build(BuildContext context) => ListView') and i > 180), None)
           if target is None:
-              raise SystemExit('PrayerPage build line was not found')
-          payload = 'ICBAb3ZlcnJpZGUKICBXaWRnZXQgYnVpbGQoQnVpbGRDb250ZXh0IGNvbnRleHQpIHsKICAgIHJldHVybiBMaXN0VmlldygKICAgICAgcGFkZGluZzogY29uc3QgRWRnZUluc2V0cy5hbGwoMTgpLAogICAgICBjaGlsZHJlbjogWwogICAgICAgIFJvdyljaGlsZHJlbjogWwogICAgICAgICAgY29uc3QgRXhwYW5kZWQoY2hpbGQ6IFRleHQoJ1ByYXllciBUaW1lcycsIHN0eWxlOiB0ZXh0U3R5bGUoZm9udFNpemU6IDMwLCBmb250V2VpZ2h0OiBGb250V2VpZ2h0Lnc5MDApKSksCiAgICAgICAgICBJY29uQnV0dG9uKG9uUHJlc3NlZDogaGxvYWRpbmcgPyBudWxsIDogbG9hZCwgaWNvbjogY29uc3QgSWNvbihJY29ucy5yZWZyZXNoLCBjb2xvcjogZ29sZCkpLAogICAgICAgIF0pLAogICAgICAgIGFwcEJveChSb3coY2hpbGRyZW46IFsKICAgICAgICAgIGNvbnN0IEljb24oSWNvbnMubG9jYXRpb25fb24sIGNvbG9yOiBnb2xkKSwKICAgICAgICAgIGNvbnN0IFNpemVkQm94KHdpZHRoOiAxMCksCiAgICAgICAgICBFeHBhbmRlZChjaGlsZDogVGV4dChwbGFjZSwgc3R5bGU6IGNvbnN0IFRleHRTdHlsZShmb250V2VpZ2h0OiBGb250V2VpZ2h0LmJvbGQpKSksCiAgICAgICAgICBJY29uQnV0dG9uKG9uUHJlc3NlZDpsb2FkLCBpY29uOiBjb25zdCBJY29uKEljb25zLm15X2xvY2F0aW9uKSksCiAgICAgICAgXSkpLAogICAgICAgIGNvbnN0IFNpemVkQm94KGhlaWdodDogMTIpLAogICAgICAgIGlmIChwcmF5ZXJzID09IG51bGwpCiAgICAgICAgICBhcHBCb3goQ29sdW1uKGNoaWxkcmVuOiBbCiAgICAgICAgICAgIGNvbnN0IFRleHQoJ0FsbG93IGxvY2F0aW9uIHRvIGNhbGN1bGF0ZSB5b3VyIGxvY2FsIHByYXllciB0aW1lcy4nLCB0ZXh0QWxpZ246IFRleHRBbGlnbi5jZW50ZXIpLAogICAgICAgICAgICBjb25zdCBTaXplZEJveChoZWlnaHQ6IDEyKSwKICAgICAgICAgICAgRmlsbGVkQnV0dG9uKG9uUHJlc3NlZDogaGxvYWRpbmcgPyBudWxsIDogbG9hZCwgY2hpbGQ6IFRleHQobG9hZGluZyA/ICdMb2FkaW5n4oCmJyA6ICdVc2UgbXkgbG9jYXRpb24nKSksCiAgICAgICAgICBdKSkKICAgICAgICBlbHNlCiAgICAgICAgICAuLi5wcmF5ZXJzIS5tYXAoKHApID0+IFBhZGRpbmcoCiAgICAgICAgICAgICAgICBwYWRkaW5nOiBjb25zdCBFZGdlSW5zZXRzLm9ubHkoYm90dG9tOiA4KSwKICAgICAgICAgICAgICAgIGNoaWxkOiBhcHBCb3goUm93KGNoaWxkcmVuOiBbCiAgICAgICAgICAgICAgICAgIEljb24ocC5uYW1lID09ICdTdW5yaXNlJyA/ IWNvbnMud2Jfc3VubnkgOiBJY29ucy5tb3NxdWUsIGNvbG9yOiBnb2xkKSwKICAgICAgICAgICAgICAgICAgY29uc3QgU2l6ZWRCb3god2lkdGg6IDEyKSwKICAgICAgICAgICAgICAgICAgRXhwYW5kZWQoY2hpbGQ6IFRleHQoJyR7cC5uYW1lfVxuJHtwLmFyYWJpY30nKSksCiAgICAgICAgICAgICAgICAgIFRleHQoRGF0ZUZvcm1hdCgnaDptbSBhJykubmZvcm1hdChwLnRpbWUpLCBzdHlsZTogY29uc3QgVGV4dFN0eWxlKGNvbG9yOiBnb2xkLCBmb250U2l6ZTogMTcsIGZvbnRXZWlnaHQ6IEZvbnRXZWlnaHQuYm9sZCkpLAogICAgICAgICAgICAgICAgXSkpLAogICAgICAgICAgICAgICkpLAogICAgICAgIGNvbnN0IFNpemVkQm94KGhlaWdodDogMTApLAogICAgICAgIE91dGxpbmVkQnV0dG9uLmljb24oCiAgICAgICAgICBvb1ByZXNzZWQ6ICgpID0+IE5hdmlnYXRvci5wdXNoKGNvbnRleHQsIE1hdGVyaWFsUGFnZVJvdXRlPHZvaWQ+KGJ1aWxkZXI6IChfKSA9PiBBbGFybVNldHRpbmdzUGFnZShhbGFybXM6IHdpZGdldC5hbGFybXMpKSksCiAgICAgICAgICBpY29uOiBjb25zdCBJY29uKEljb25zLm5vdGlmaWNhdGlvbnNfYWN0aXZlKSwKICAgICAgICAgIGxhYmVsOiBjb25zdCBUZXh0KCdBZGhhbiAmIEFsYXJtIFNldHRpbmdzJyksCiAgICAgICAgKSwKICAgICAgXSwKICAgICk7CiAgfQ=='
-          replacement = base64.b64decode(payload).decode().splitlines()
-          lines[target:target+1] = replacement
+              raise SystemExit('PrayerPage build line not found')
+          payload = 'ICBAb3ZlcnJpZGUKICBXaWRnZXQgYnVpbGQoQnVpbGRDb250ZXh0IGNvbnRleHQpIHsKICAgIHJldHVybiBMaXN0VmlldygKICAgICAgcGFkZGluZzogY29uc3QgRWRnZUluc2V0cy5hbGwoMTgpLAogICAgICBjaGlsZHJlbjogWwogICAgICAgIFJvdyhjaGlsZHJlbjogWwogICAgICAgICAgY29uc3QgRXhwYW5kZWQoY2hpbGQ6IFRleHQoJ1ByYXllciBUaW1lcycsIHN0eWxlOiBUZXh0U3R5bGUoZm9udFNpemU6IDMwLCBmb250V2VpZ2h0OiBGb250V2VpZ2h0Lnc5MDApKSksCiAgICAgICAgICBJY29uQnV0dG9uKG9uUHJlc3NlZDogbG9hZGluZyA/IG51bGwgOiBsb2FkLCBpY29uOiBjb25zdCBJY29uKEljb25zLnJlZnJlc2gsIGNvbG9yOiBnb2xkKSksCiAgICAgICAgXSksCiAgICAgICAgYXBwQm94KFJvdyhjaGlsZHJlbjogWwogICAgICAgICAgY29uc3QgSWNvbihJY29ucy5sb2NhdGlvbl9vbiwgY29sb3I6IGdvbGQpLAogICAgICAgICAgY29uc3QgU2l6ZWRCb3god2lkdGg6IDEwKSwKICAgICAgICAgIEV4cGFuZGVkKGNoaWxkOiBUZXh0KHBsYWNlLCBzdHlsZTogY29uc3QgVGV4dFN0eWxlKGZvbnRXZWlnaHQ6IEZvbnRXZWlnaHQuYm9sZCkpKSwKICAgICAgICAgIEljb25CdXR0b24ob25QcmVzc2VkOiBsb2FkLCBpY29uOiBjb25zdCBJY29uKEljb25zLm15X2xvY2F0aW9uKSksCiAgICAgICAgXSkpLAogICAgICAgIGNvbnN0IFNpemVkQm94KGhlaWdodDogMTIpLAogICAgICAgIGlmIChwcmF5ZXJzID09IG51bGwpCiAgICAgICAgICBhcHBCb3goQ29sdW1uKGNoaWxkcmVuOiBbCiAgICAgICAgICAgIGNvbnN0IFRleHQoJ0FsbG93IGxvY2F0aW9uIHRvIGNhbGN1bGF0ZSB5b3VyIGxvY2FsIHByYXllciB0aW1lcy4nLCB0ZXh0QWxpZ246IFRleHRBbGlnbi5jZW50ZXIpLAogICAgICAgICAgICBjb25zdCBTaXplZEJveChoZWlnaHQ6IDEyKSwKICAgICAgICAgICAgRmlsbGVkQnV0dG9uKG9uUHJlc3NlZDogaGxvYWRpbmcgPyBudWxsIDogbG9hZCwgY2hpbGQ6IFRleHQobG9hZGluZyA/ICdMb2FkaW5n4oCmJyA6ICdVc2UgbXkgbG9jYXRpb24nKSksCiAgICAgICAgICBdKSkKICAgICAgICBlbHNlCiAgICAgICAgICAuLi5wcmF5ZXJzIS5tYXAoKHApID0+IFBhZGRpbmcoCiAgICAgICAgICAgICAgICBwYWRkaW5nOiBjb25zdCBFZGdlSW5zZXRzLm9ubHkoYm90dG9tOiA4KSwKICAgICAgICAgICAgICAgIGNoaWxkOiBhcHBCb3goUm93KGNoaWxkcmVuOiBbCiAgICAgICAgICAgICAgICAgIEljb24ocC5uYW1lID09ICdTdW5yaXNlJyA/ IWNvbnMud2Jfc3VubnkgOiBJY29ucy5tb3NxdWUsIGNvbG9yOiBnb2xkKSwKICAgICAgICAgICAgICAgICAgY29uc3QgU2l6ZWRCb3god2lkdGg6IDEyKSwKICAgICAgICAgICAgICAgICAgRXhwYW5kZWQoY2hpbGQ6IFRleHQoJyR7cC5uYW1lfVxuJHtwLmFyYWJpY30nKSksCiAgICAgICAgICAgICAgICAgIFRleHQoRGF0ZUZvcm1hdCgnaDptbSBhJykuZm9ybWF0KHAudGltZSksIHN0eWxlOiBjb25zdCBUZXh0U3R5bGUoY29sb3I6IGdvbGQsIGZvbnRTaXplOiAxNywgZm9udFdlaWdodDogRm9udFdlaWdodC5ib2xkKSksCiAgICAgICAgICAgICAgICBdKSksCiAgICAgICAgICAgICAgKSksCiAgICAgICAgY29uc3QgU2l6ZWRCb3goaGVpZ2h0OiAxMCksCiAgICAgICAgT3V0bGluZWRCdXR0b24uaWNvbigKICAgICAgICAgIG9uUHJlc3NlZDogKCkgPT4gTmF2aWdhdG9yLnB1c2goY29udGV4dCwgTWF0ZXJpYWxQYWdlUm91dGU8dm9pZD4oYnVpbGRlcjogKF8pID0+IEFsYXJtU2V0dGluZ3NQYWdlKGFsYXJtczogd2lkZ2V0LmFsYXJtcykpKSwKICAgICAgICAgIGljb246IGNvbnN0IEljb24oSWNvbnMubm90aWZpY2F0aW9uc19hY3RpdmUpLAogICAgICAgICAgbGFiZWw6IGNvbnN0IFRleHQoJ0FkaGFuICYgQWxhcm0gU2V0dGluZ3MnKSwKICAgICAgICApLAogICAgICBdLAogICAgKTsKICB9'
+          lines[target:target+1] = base64.b64decode(payload).decode().splitlines()
           app.write_text('\n'.join(lines) + '\n')
           services = Path('lib/services.dart')
-          ss = services.read_text().replace('visibility: NotificationVisibility.public));', 'visibility: NotificationVisibility.public)));')
-          services.write_text(ss)
+          services.write_text(services.read_text().replace('visibility: NotificationVisibility.public));', 'visibility: NotificationVisibility.public)));'))
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -56,7 +54,7 @@ jobs:
           rm -rf /tmp/hudaway_android
           flutter create /tmp/hudaway_android --platforms android --org com.hudaway --project-name hudaway
           test -f /tmp/hudaway_android/android/app/src/main/AndroidManifest.xml
-          rm -rf ./android
+          rm -rf android
           cp -a /tmp/hudaway_android/android ./android
           cp /tmp/hudaway_android/.metadata ./.metadata
           cp /tmp/hudaway_android/analysis_options.yaml ./analysis_options.yaml
@@ -70,29 +68,22 @@ jobs:
           curl -fsSL --retry 3 https://api.alquran.cloud/v1/quran/quran-uthmani -o assets/data/quran.json
           python3 - <<'PY'
           import json
-          with open('assets/data/quran.json', encoding='utf-8') as f:
-              data = json.load(f)
-          surahs = data.get('data', {}).get('surahs', [])
-          assert len(surahs) == 114, len(surahs)
-          assert sum(len(s.get('ayahs', [])) for s in surahs) == 6236
-          assert all(s.get('ayahs') for s in surahs)
-          print('Quran asset validated: 114 surahs / 6236 ayahs')
+          data=json.load(open('assets/data/quran.json',encoding='utf-8'))
+          surahs=data.get('data',{}).get('surahs',[])
+          assert len(surahs)==114
+          assert sum(len(s.get('ayahs',[])) for s in surahs)==6236
+          print('Quran asset validated')
           PY
           python3 - <<'PY'
-          from urllib.parse import quote
           from pathlib import Path
+          from urllib.parse import quote
           import subprocess
-          base = 'https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main/'
-          files = {
-              'adhan_kuwait.mp3': 'Adhan_Kuwait_(أذان_الكويت).mp3',
-              'adhan_dubai.mp3': 'Adhan_Dubai_UAE_(أذان_دبي_الإمارات).mp3',
-              'adhan_fajr.mp3': 'Adhan_Fajr_Al_Haram_Al_Maki_(أذان_الفجر_الحرم_المكي).mp3',
-          }
-          for out, src in files.items():
-              url = base + quote(src, safe='/()_-')
-              target = Path('android/app/src/main/res/raw') / out
-              subprocess.run(['curl','-fsSL','--retry','3',url,'-o',str(target)], check=True)
-              assert target.stat().st_size > 1000
+          base='https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main/'
+          files={'adhan_kuwait.mp3':'Adhan_Kuwait_(أذان_الكويت).mp3','adhan_dubai.mp3':'Adhan_Dubai_UAE_(أذان_دبي_الإمارات).mp3','adhan_fajr.mp3':'Adhan_Fajr_Al_Haram_Al_Maki_(أذان_الفجر_الحرم_المكي).mp3'}
+          for out,src in files.items():
+            target=Path('android/app/src/main/res/raw')/out
+            subprocess.run(['curl','-fsSL','--retry','3',base+quote(src,safe='/()_-'),'-o',str(target)],check=True)
+            assert target.stat().st_size>1000
           PY
 
       - name: Configure Android
@@ -101,40 +92,22 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          manifest = Path('android/app/src/main/AndroidManifest.xml')
-          if not manifest.is_file():
-              raise SystemExit('AndroidManifest.xml was not generated')
-          s = manifest.read_text()
-          marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
-          permissions = '''
-              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-              <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-          '''
-          if 'ACCESS_FINE_LOCATION' not in s:
-              s = s.replace(marker, marker + permissions)
-          s = s.replace('android:label="hudaway"','android:label="HudaWay"').replace('android:label="hudaway_android"','android:label="HudaWay"')
-          s = re.sub(r'android:icon="[^"]+"','android:icon="@drawable/hudaway_logo"',s,count=1)
-          manifest.write_text(s)
-
-          drawable = Path('android/app/src/main/res/drawable')
-          drawable.mkdir(parents=True, exist_ok=True)
-          (drawable/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#D96B00" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#FFFFFF" android:pathData="M54,18A36,36 0,1 0,54 90A36,36 0,1 0,54 18"/><path android:fillColor="#D96B00" android:pathData="M60,25A29,29 0,1 0,60 83A29,29 0,1 1,60 25"/><path android:fillColor="#FFFFFF" android:pathData="M25,61c5,-17 16,-27 29,-27 13,0 24,10 29,27H25zM28,62h52v25H28zM20,87h68v8H20z"/><path android:fillColor="#D96B00" android:pathData="M31,67h46v4H31zM29,76h50v4H29zM26,85h56v4H26z"/><path android:fillColor="#FFFFFF" android:pathData="M54,34V22h-3v12z"/><path android:fillColor="#FFFFFF" android:pathData="M54,12a8,8 0,1 0,8 8 10,10 0,1 1,-8,-8z"/><path android:fillColor="#FFFFFF" android:pathData="M54,16l2,4 5,1 -4,3 1,5 -4,-3 -4,3 1,-5 -4,-3 5,-1z"/></vector>''')
-
-          gradle = Path('android/app/build.gradle.kts')
-          x = gradle.read_text().replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36')
-          lines = [line for line in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in line and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in line]
-          x = '\n'.join(lines) + '\n'
-          if 'compileOptions {' not in x:
-              raise SystemExit('compileOptions block missing')
-          x = x.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1)
-          if 'dependencies {' in x:
-              x = x.replace('dependencies {','dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',1)
-          else:
-              x += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n}\n'
-          gradle.write_text(x)
+          m=Path('android/app/src/main/AndroidManifest.xml')
+          s=m.read_text()
+          marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+          perms='''\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n'''
+          if 'ACCESS_FINE_LOCATION' not in s: s=s.replace(marker,marker+perms)
+          s=re.sub(r'android:label="[^"]+"','android:label="HudaWay"',s,count=1)
+          s=re.sub(r'android:icon="[^"]+"','android:icon="@drawable/hudaway_logo"',s,count=1)
+          m.write_text(s)
+          d=Path('android/app/src/main/res/drawable'); d.mkdir(parents=True,exist_ok=True)
+          (d/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#D96B00" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#FFFFFF" android:pathData="M54,18A36,36 0,1 0,54 90A36,36 0,1 0,54 18"/><path android:fillColor="#D96B00" android:pathData="M60,25A29,29 0,1 0,60 83A29,29 0,1 1,60 25"/><path android:fillColor="#FFFFFF" android:pathData="M25,61c5,-17 16,-27 29,-27 13,0 24,10 29,27H25zM28,62h52v25H28zM20,87h68v8H20z"/><path android:fillColor="#D96B00" android:pathData="M31,67h46v4H31zM29,76h50v4H29zM26,85h56v4H26z"/><path android:fillColor="#FFFFFF" android:pathData="M54,34V22h-3v12z"/><path android:fillColor="#FFFFFF" android:pathData="M54,12a8,8 0,1 0,8 8 10,10 0,1 1,-8,-8z"/><path android:fillColor="#FFFFFF" android:pathData="M54,16l2,4 5,1 -4,3 1,5 -4,-3 -4,3 1,-5 -4,-3 5,-1z"/></vector>''')
+          g=Path('android/app/build.gradle.kts')
+          x=g.read_text().replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36')
+          x='\n'.join([line for line in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in line and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in line])+'\n'
+          x=x.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1)
+          x=x.replace('dependencies {','dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',1)
+          g.write_text(x)
           PY
 
       - name: Install dependencies
@@ -142,12 +115,11 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos
       - name: Run tests
-        run: if [ -d test ]; then flutter test; else echo 'No tests; continuing'; fi
+        run: flutter test
       - name: Build release APKs
         run: flutter build apk --release --split-per-abi
       - name: Verify APK outputs
         run: |
-          set -e
           test -s build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
           test -s build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           test -s build/app/outputs/flutter-apk/app-x86_64-release.apk
@@ -162,14 +134,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          if gh release view v1.1.0 >/dev/null 2>&1; then
-            echo 'HudaWay v1.1.0 already exists; skipping release creation.'
-          else
-            gh release create v1.1.0 build/app/outputs/flutter-apk/*.apk --target "$GITHUB_SHA" --title "HudaWay v1.1.0" --notes "Major HudaWay upgrade.\n\n- Complete Quran with continuous Mushaf-style reader\n- Full-surah Quran audio and adjustable Arabic font\n- GPS-based prayer times with city/country display\n- Live Qibla compass that follows phone rotation\n- Multiple Adhan sounds and 7-day exact alarm scheduling\n- Hijri 1448+ calendar with optional lock-screen display\n- Expanded Duas & Adhkar\n- Dhikr / Tasbeeh\n- Ramadan features unlock automatically in Hijri month 9\n- New HudaWay orange crescent/Quran branding\n- Expanded settings for calculation method, madhab, alarms and lock screen"
-          fi
-      - name: Create GitHub Release for version tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" build/app/outputs/flutter-apk/*.apk --title "HudaWay ${GITHUB_REF_NAME}" --generate-notes
+          gh release delete v1.1.0 --yes 2>/dev/null || true
+          gh release create v1.1.0 build/app/outputs/flutter-apk/*.apk --target "$GITHUB_SHA" --title "HudaWay v1.1.0" --notes "Major HudaWay upgrade: Quran reader, Qibla compass, prayer times, Adhan alarms, Hijri calendar, Duas, Dhikr, Ramadan tools and new branding."
