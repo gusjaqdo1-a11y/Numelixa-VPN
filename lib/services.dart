@@ -15,13 +15,13 @@ class QuranService {
     try {
       final raw = await rootBundle.loadString('assets/data/quran.json');
       final json = jsonDecode(raw) as Map<String, dynamic>;
-      return ((json['data']?['surahs'] as List?) ?? const []).map((e) => Surah.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
-      final response = await http.get(Uri.parse('https://api.alquran.cloud/v1/quran/quran-uthmani'));
-      if (response.statusCode != 200) throw Exception('Quran data unavailable');
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return ((json['data']?['surahs'] as List?) ?? const []).map((e) => Surah.fromJson(e as Map<String, dynamic>)).toList();
-    }
+      final surahs = ((json['data']?['surahs'] as List?) ?? const []).map((e) => Surah.fromJson(e as Map<String, dynamic>)).toList();
+      if (surahs.length == 114) return surahs;
+    } catch (_) {}
+    final response = await http.get(Uri.parse('https://api.alquran.cloud/v1/quran/quran-uthmani'));
+    if (response.statusCode != 200) throw Exception('Quran data unavailable');
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return ((json['data']?['surahs'] as List?) ?? const []).map((e) => Surah.fromJson(e as Map<String, dynamic>)).toList();
   }
 }
 
