@@ -1,7 +1,7 @@
 name: hudaway
 description: HudaWay — a premium Muslim companion with Quran, prayer times, Qibla, duas, dhikr, Ramadan tools and Quran audio.
 publish_to: 'none'
-version: 1.1.0+2
+version: 1.2.0+3
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -20,6 +20,7 @@ dependencies:
   flutter_timezone: ^5.1.1
   flutter_svg: ^2.2.0
   flutter_compass: ^0.8.1
+  geomag: ^0.3.0
   audioplayers: ^6.8.1
   intl: ^0.20.2
 
