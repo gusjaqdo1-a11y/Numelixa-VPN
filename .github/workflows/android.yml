@@ -1,4 +1,4 @@
-name: Build Numelixa Quran APK
+name: Build HudaWay APK
 
 on:
   push:
@@ -23,11 +23,11 @@ jobs:
           cache: true
       - name: Generate Android platform
         run: |
-          rm -rf /tmp/numelixa_android
-          flutter create /tmp/numelixa_android --platforms android --org com.numelixa --project-name numelixa_quran
-          cp -R /tmp/numelixa_android/android ./android
-          cp /tmp/numelixa_android/.metadata ./.metadata
-          cp /tmp/numelixa_android/analysis_options.yaml ./analysis_options.yaml
+          rm -rf /tmp/hudaway_android
+          flutter create /tmp/hudaway_android --platforms android --org com.hudaway --project-name hudaway
+          cp -R /tmp/hudaway_android/android ./android
+          cp /tmp/hudaway_android/.metadata ./.metadata
+          cp /tmp/hudaway_android/analysis_options.yaml ./analysis_options.yaml
       - name: Prepare Quran data
         run: |
           mkdir -p assets/data
@@ -49,7 +49,8 @@ jobs:
           marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
           permissions='''\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n'''
           if 'SCHEDULE_EXACT_ALARM' not in s: s=s.replace(marker, marker+permissions)
-          s=s.replace('android:label="numelixa_quran"','android:label="Numelixa Quran"')
+          s=s.replace('android:label="hudaway"','android:label="HudaWay"')
+          s=s.replace('android:label="hudaway_android"','android:label="HudaWay"')
           p.write_text(s)
           q=Path('android/app/build.gradle.kts')
           if q.exists():
@@ -68,11 +69,11 @@ jobs:
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: numelixa-quran-apks
+          name: hudaway-apks
           path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
       - name: Create GitHub Release for version tag
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" build/app/outputs/flutter-apk/*.apk --title "Numelixa Quran ${GITHUB_REF_NAME}" --generate-notes
+        run: gh release create "${GITHUB_REF_NAME}" build/app/outputs/flutter-apk/*.apk --title "HudaWay ${GITHUB_REF_NAME}" --generate-notes
