@@ -291,7 +291,47 @@ class _MorePageState extends State<MorePage> {
   Future<void> _load() async { final m = await Preferences.prayerMethod(); final ma = await Preferences.madhab(); final l = await Preferences.lockCalendar(); if (mounted) setState(() { method = m; madhab = ma; lockCalendar = l; }); }
   Future<void> _method(String v) async { await Preferences.setPrayerMethod(v); setState(() => method = v); await widget.alarms.refreshStoredSchedule(); }
   Future<void> _madhab(String v) async { await Preferences.setMadhab(v); setState(() => madhab = v); await widget.alarms.refreshStoredSchedule(); }
-  @override Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(18), children: [Row(children: [const BrandMark(size: 56), const SizedBox(width: 12), const Text('Settings', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))]), const SizedBox(height: 18), appBox(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Prayer calculation', style: TextStyle(color: gold, fontWeight: FontWeight.bold)), DropdownButtonFormField<String>(initialValue: method, decoration: const InputDecoration(labelText: 'Calculation method'), items: const ['Muslim World League','Egyptian','Karachi','Umm al-Qura','Dubai','Qatar','Kuwait','ISNA'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) { if (v != null) _method(v); }), const SizedBox(height: 10), DropdownButtonFormField<String>(initialValue: madhab, decoration: const InputDecoration(labelText: 'Asr madhab'), items: const ['Shafi','Hanafi'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) { if (v != null) _madhab(v); })])), const SizedBox(height: 12), appBox(Column(children: [SwitchListTile(value: lockCalendar, onChanged: (v) async { setState(() => lockCalendar = v); await Preferences.setLockCalendar(v); if (v) { final h = await HijriService.today(); if (h != null) await widget.alarms.showLockCalendar(h.display); } else { await widget.alarms.hideLockCalendar(); } }, title: const Text('Lock-screen Hijri calendar'), subtitle: const Text('Show HudaWay + Arabic date on the Android lock screen notification area')), ListTile(leading: const Icon(Icons.notifications_active, color: gold), title: const Text('Adhan & alarm settings'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AlarmSettingsPage(alarms: widget.alarms))))])), const SizedBox(height: 12), appBox(const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Quran reader', style: TextStyle(color: gold, fontWeight: FontWeight.bold)), SizedBox(height: 8), Text('Continuous Mushaf-style reading, page grouping, Arabic text scaling, and full-surah audio.')])) , const SizedBox(height: 12), ListTile(leading: const Icon(Icons.explore, color: gold), title: const Text('Qibla Finder'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const QiblaPage()))), ListTile(leading: const Icon(Icons.menu_book, color: gold), title: const Text('Duas & Adhkar'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const DuasPage()))), ListTile(leading: const Icon(Icons.nightlight, color: gold), title: const Text('Ramadan'), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const RamadanPage()))) ]);
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        Row(children: [
+          const Expanded(child: Text('Prayer Times', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
+          IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.refresh, color: gold)),
+        ]),
+        appBox(Row(children: [
+          const Icon(Icons.location_on, color: gold),
+          const SizedBox(width: 10),
+          Expanded(child: Text(place, style: const TextStyle(fontWeight: FontWeight.bold))),
+          IconButton(onPressed: load, icon: const Icon(Icons.my_location)),
+        ])),
+        const SizedBox(height: 12),
+        if (prayers == null)
+          appBox(Column(children: [
+            const Text('Allow location to calculate your local prayer times.', textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            FilledButton(onPressed: hloading ? null : load, child: Text(loading ? 'Loading…' : 'Use my location')),
+          ]))
+        else
+          ...prayers!.map((p) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: appBox(Row(children: [
+                  Icon(p.name == 'Sunrise' ?!cons.wb_sunny : Icons.mosque, color: gold),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('${p.name}\n${p.arabic}')),
+                  Text(DateFormat('h:mm a').format(p.time), style: const TextStyle(color: gold, fontSize: 17, fontWeight: FontWeight.bold)),
+                ])),
+              )),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AlarmSettingsPage(alarms: widget.alarms))),
+          icon: const Icon(Icons.notifications_active),
+          label: const Text('Adhan & Alarm Settings'),
+        ),
+      ],
+    );
+  }
 }
 
 class HijriDate { final int day, month, year; final String monthName; const HijriDate(this.day, this.month, this.year, this.monthName); String get display => '$day $monthName $year AH'; }
