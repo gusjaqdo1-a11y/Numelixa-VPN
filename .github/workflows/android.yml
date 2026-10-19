@@ -21,54 +21,14 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import re
+          import base64
           app = Path('lib/app.dart')
           lines = app.read_text().splitlines()
-          # Replace the fragile one-line PrayerPage build with a simple, explicit widget tree.
           target = next((i for i, line in enumerate(lines) if line.strip().startswith('@override Widget build(BuildContext context) => ListView') and i > 180), None)
           if target is None:
               raise SystemExit('PrayerPage build line was not found')
-          replacement = '''  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(18),
-      children: [
-        Row(children: [
-          const Expanded(child: Text('Prayer Times', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
-          IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.refresh, color: gold)),
-        ]),
-        appBox(Row(children: [
-          const Icon(Icons.location_on, color: gold),
-          const SizedBox(width: 10),
-          Expanded(child: Text(place, style: const TextStyle(fontWeight: FontWeight.bold))),
-          IconButton(onPressed: load, icon: const Icon(Icons.my_location)),
-        ])),
-        const SizedBox(height: 12),
-        if (prayers == null)
-          appBox(Column(children: [
-            const Text('Allow location to calculate your local prayer times.', textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: loading ? null : load, child: Text(loading ? 'Loading…' : 'Use my location')),
-          ]))
-        else
-          ...prayers!.map((p) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: appBox(Row(children: [
-                  Icon(p.name == 'Sunrise' ? Icons.wb_sunny : Icons.mosque, color: gold),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text('${p.name}\\n${p.arabic}')),
-                  Text(DateFormat('h:mm a').format(p.time), style: const TextStyle(color: gold, fontSize: 17, fontWeight: FontWeight.bold)),
-                ])),
-              )),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AlarmSettingsPage(alarms: widget.alarms))),
-          icon: const Icon(Icons.notifications_active),
-          label: const Text('Adhan & Alarm Settings'),
-        ),
-      ],
-    );
-  }'''.splitlines()
+          payload = 'ICBAb3ZlcnJpZGUKICBXaWRnZXQgYnVpbGQoQnVpbGRDb250ZXh0IGNvbnRleHQpIHsKICAgIHJldHVybiBMaXN0VmlldygKICAgICAgcGFkZGluZzogY29uc3QgRWRnZUluc2V0cy5hbGwoMTgpLAogICAgICBjaGlsZHJlbjogWwogICAgICAgIFJvdyljaGlsZHJlbjogWwogICAgICAgICAgY29uc3QgRXhwYW5kZWQoY2hpbGQ6IFRleHQoJ1ByYXllciBUaW1lcycsIHN0eWxlOiB0ZXh0U3R5bGUoZm9udFNpemU6IDMwLCBmb250V2VpZ2h0OiBGb250V2VpZ2h0Lnc5MDApKSksCiAgICAgICAgICBJY29uQnV0dG9uKG9uUHJlc3NlZDogaGxvYWRpbmcgPyBudWxsIDogbG9hZCwgaWNvbjogY29uc3QgSWNvbihJY29ucy5yZWZyZXNoLCBjb2xvcjogZ29sZCkpLAogICAgICAgIF0pLAogICAgICAgIGFwcEJveChSb3coY2hpbGRyZW46IFsKICAgICAgICAgIGNvbnN0IEljb24oSWNvbnMubG9jYXRpb25fb24sIGNvbG9yOiBnb2xkKSwKICAgICAgICAgIGNvbnN0IFNpemVkQm94KHdpZHRoOiAxMCksCiAgICAgICAgICBFeHBhbmRlZChjaGlsZDogVGV4dChwbGFjZSwgc3R5bGU6IGNvbnN0IFRleHRTdHlsZShmb250V2VpZ2h0OiBGb250V2VpZ2h0LmJvbGQpKSksCiAgICAgICAgICBJY29uQnV0dG9uKG9uUHJlc3NlZDpsb2FkLCBpY29uOiBjb25zdCBJY29uKEljb25zLm15X2xvY2F0aW9uKSksCiAgICAgICAgXSkpLAogICAgICAgIGNvbnN0IFNpemVkQm94KGhlaWdodDogMTIpLAogICAgICAgIGlmIChwcmF5ZXJzID09IG51bGwpCiAgICAgICAgICBhcHBCb3goQ29sdW1uKGNoaWxkcmVuOiBbCiAgICAgICAgICAgIGNvbnN0IFRleHQoJ0FsbG93IGxvY2F0aW9uIHRvIGNhbGN1bGF0ZSB5b3VyIGxvY2FsIHByYXllciB0aW1lcy4nLCB0ZXh0QWxpZ246IFRleHRBbGlnbi5jZW50ZXIpLAogICAgICAgICAgICBjb25zdCBTaXplZEJveChoZWlnaHQ6IDEyKSwKICAgICAgICAgICAgRmlsbGVkQnV0dG9uKG9uUHJlc3NlZDogaGxvYWRpbmcgPyBudWxsIDogbG9hZCwgY2hpbGQ6IFRleHQobG9hZGluZyA/ICdMb2FkaW5n4oCmJyA6ICdVc2UgbXkgbG9jYXRpb24nKSksCiAgICAgICAgICBdKSkKICAgICAgICBlbHNlCiAgICAgICAgICAuLi5wcmF5ZXJzIS5tYXAoKHApID0+IFBhZGRpbmcoCiAgICAgICAgICAgICAgICBwYWRkaW5nOiBjb25zdCBFZGdlSW5zZXRzLm9ubHkoYm90dG9tOiA4KSwKICAgICAgICAgICAgICAgIGNoaWxkOiBhcHBCb3goUm93KGNoaWxkcmVuOiBbCiAgICAgICAgICAgICAgICAgIEljb24ocC5uYW1lID09ICdTdW5yaXNlJyA/ IWNvbnMud2Jfc3VubnkgOiBJY29ucy5tb3NxdWUsIGNvbG9yOiBnb2xkKSwKICAgICAgICAgICAgICAgICAgY29uc3QgU2l6ZWRCb3god2lkdGg6IDEyKSwKICAgICAgICAgICAgICAgICAgRXhwYW5kZWQoY2hpbGQ6IFRleHQoJyR7cC5uYW1lfVxuJHtwLmFyYWJpY30nKSksCiAgICAgICAgICAgICAgICAgIFRleHQoRGF0ZUZvcm1hdCgnaDptbSBhJykubmZvcm1hdChwLnRpbWUpLCBzdHlsZTogY29uc3QgVGV4dFN0eWxlKGNvbG9yOiBnb2xkLCBmb250U2l6ZTogMTcsIGZvbnRXZWlnaHQ6IEZvbnRXZWlnaHQuYm9sZCkpLAogICAgICAgICAgICAgICAgXSkpLAogICAgICAgICAgICAgICkpLAogICAgICAgIGNvbnN0IFNpemVkQm94KGhlaWdodDogMTApLAogICAgICAgIE91dGxpbmVkQnV0dG9uLmljb24oCiAgICAgICAgICBvb1ByZXNzZWQ6ICgpID0+IE5hdmlnYXRvci5wdXNoKGNvbnRleHQsIE1hdGVyaWFsUGFnZVJvdXRlPHZvaWQ+KGJ1aWxkZXI6IChfKSA9PiBBbGFybVNldHRpbmdzUGFnZShhbGFybXM6IHdpZGdldC5hbGFybXMpKSksCiAgICAgICAgICBpY29uOiBjb25zdCBJY29uKEljb25zLm5vdGlmaWNhdGlvbnNfYWN0aXZlKSwKICAgICAgICAgIGxhYmVsOiBjb25zdCBUZXh0KCdBZGhhbiAmIEFsYXJtIFNldHRpbmdzJyksCiAgICAgICAgKSwKICAgICAgXSwKICAgICk7CiAgfQ=='
+          replacement = base64.b64decode(payload).decode().splitlines()
           lines[target:target+1] = replacement
           app.write_text('\n'.join(lines) + '\n')
           services = Path('lib/services.dart')
@@ -79,7 +39,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if ! git diff --quiet -- lib/app.dart lib/services.dart; then
             git add lib/app.dart lib/services.dart
-            git commit -m 'fix: simplify prayer UI and notification syntax [skip ci]'
+            git commit -m 'fix: finalize Dart source repairs [skip ci]'
             git push
           fi
 
