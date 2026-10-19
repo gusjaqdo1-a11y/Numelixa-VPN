@@ -55,7 +55,7 @@ class AlarmService {
     tz.initializeTimeZones();
     try { final zone = await FlutterTimezone.getLocalTimezone(); tz.setLocalLocation(tz.getLocation(zone.identifier)); } catch (_) {}
     const settings = InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher'));
-    await plugin.initialize(settings);
+    await plugin.initialize(settings: settings);
     await plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
     await plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestExactAlarmsPermission();
     ready = true;
