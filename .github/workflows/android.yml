@@ -25,14 +25,20 @@ jobs:
 
       - name: Generate Android platform
         run: |
+          set -euo pipefail
           rm -rf /tmp/hudaway_android
           flutter create /tmp/hudaway_android --platforms android --org com.hudaway --project-name hudaway
-          cp -R /tmp/hudaway_android/android ./android
+          test -f /tmp/hudaway_android/android/app/src/main/AndroidManifest.xml
+          rm -rf ./android
+          cp -a /tmp/hudaway_android/android ./android
           cp /tmp/hudaway_android/.metadata ./.metadata
           cp /tmp/hudaway_android/analysis_options.yaml ./analysis_options.yaml
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f android/app/build.gradle.kts
 
       - name: Prepare Quran and Adhan assets
         run: |
+          set -euo pipefail
           mkdir -p assets/data android/app/src/main/res/raw
           curl -fsSL --retry 3 https://api.alquran.cloud/v1/quran/quran-uthmani -o assets/data/quran.json
           python3 - <<'PY'
@@ -40,8 +46,9 @@ jobs:
           with open('assets/data/quran.json', encoding='utf-8') as f:
               data = json.load(f)
           surahs = data.get('data', {}).get('surahs', [])
-          assert len(surahs) == 114
+          assert len(surahs) == 114, len(surahs)
           assert sum(len(s.get('ayahs', [])) for s in surahs) == 6236
+          assert all(s.get('ayahs') for s in surahs)
           print('Quran asset validated: 114 surahs / 6236 ayahs')
           PY
           python3 - <<'PY'
@@ -56,32 +63,50 @@ jobs:
           }
           for out, src in files.items():
               url = base + quote(src, safe='/()_-')
-              subprocess.run(['curl','-fsSL','--retry','3',url,'-o',f'android/app/src/main/res/raw/{out}'], check=True)
-              assert Path(f'android/app/src/main/res/raw/{out}').stat().st_size > 1000
+              target = Path('android/app/src/main/res/raw') / out
+              subprocess.run(['curl','-fsSL','--retry','3',url,'-o',str(target)], check=True)
+              assert target.stat().st_size > 1000
           PY
 
       - name: Configure Android
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import re
           manifest = Path('android/app/src/main/AndroidManifest.xml')
+          if not manifest.is_file():
+              raise SystemExit('AndroidManifest.xml was not generated')
           s = manifest.read_text()
           marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
-          permissions = '''\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n'''
-          if 'ACCESS_FINE_LOCATION' not in s: s = s.replace(marker, marker + permissions)
+          permissions = '''
+              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+          '''
+          if 'ACCESS_FINE_LOCATION' not in s:
+              s = s.replace(marker, marker + permissions)
           s = s.replace('android:label="hudaway"','android:label="HudaWay"').replace('android:label="hudaway_android"','android:label="HudaWay"')
           s = re.sub(r'android:icon="[^"]+"','android:icon="@drawable/hudaway_logo"',s,count=1)
           manifest.write_text(s)
-          drawable = Path('android/app/src/main/res/drawable'); drawable.mkdir(parents=True,exist_ok=True)
-          (drawable/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#061A14" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#0B5D45" android:pathData="M54,10A44,44 0,1 0,54 98A44,44 0,1 0,54 10"/><path android:fillColor="#D6A63A" android:pathData="M61,24A29,29 0,1 0,61 84A29,29 0,1 1,61 24"/><path android:fillColor="#0B5D45" android:pathData="M70,27A25,25 0,1 0,70 81A25,25 0,1 1,70 27"/><path android:fillColor="#D6A63A" android:pathData="M77,31l2.8,7.1 7.6,0.5 -5.8,4.8 1.9,7.4 -6.5,-4.1 -6.5,4.1 1.9,-7.4 -5.8,-4.8 7.6,-0.5z"/></vector>''')
+
+          drawable = Path('android/app/src/main/res/drawable')
+          drawable.mkdir(parents=True, exist_ok=True)
+          (drawable/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#061A14" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#0B5D45" android:pathData="M54,10A44,44 0,1 0,54 98A44,44 0,1 0,54 10"/><path android:fillColor="#D6A63A" android:pathData="M61,24A29,29 0,1 0,61 84A29,29 0,1 1,61 24"/><path android:fillColor="#0B5D45" android:pathData="M70,27A25,25 0,1 0,70 81A25,25 0,1 1,70 27"/><path android:fillColor="#D6A63A" android:pathData="M77,31l2.8,7.1 7.6,0.5 -5.8,4.8 1.9,7.4 -6.5,-4.1 -6.5,4.1 1.9,-7.4 -5.8,-4.8 7.6,-0.5z"/> </vector>''')
+
           gradle = Path('android/app/build.gradle.kts')
           x = gradle.read_text().replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36')
           lines = [line for line in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in line and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in line]
-          x = '\n'.join(lines)+'\n'
+          x = '\n'.join(lines) + '\n'
+          if 'compileOptions {' not in x:
+              raise SystemExit('compileOptions block missing')
           x = x.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1)
-          if 'dependencies {' in x: x=x.replace('dependencies {','dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',1)
-          else: x+='\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n}\n'
+          if 'dependencies {' in x:
+              x = x.replace('dependencies {','dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',1)
+          else:
+              x += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n}\n'
           gradle.write_text(x)
           PY
 
