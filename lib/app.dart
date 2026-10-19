@@ -159,21 +159,46 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _tile(BuildContext context, IconData icon, String title, Widget page) => InkWell(borderRadius: BorderRadius.circular(22), onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page)), child: appBox(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: gold, size: 30), const Spacer(), Text(title, style: const TextStyle(fontWeight: FontWeight.bold))])));
 }
 
-class QuranPage extends StatefulWidget { const QuranPage({super.key}); @override State<QuranPage> createState() => _QuranPageState(); }
+class QuranPage extends StatefulWidget {
+  const QuranPage({super.key});
+  @override State<QuranPage> createState() => _QuranPageState();
+}
 class _QuranPageState extends State<QuranPage> {
   late Future<List<Surah>> future;
   String query = '';
-  @override void initState() { super.initState(); future = QuranService().load(); }
-  @override Widget build(BuildContext context) => FutureBuilder<List<Surah>>(future: future, builder: (context, snapshot) {
-    if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-    if (snapshot.hasError || snapshot.data == null) return Center(child: FilledButton.icon(onPressed: () => setState(() => future = QuranService().load()), icon: const Icon(Icons.refresh), label: const Text('Retry Quran')));
-    final all = snapshot.data!; final q = query.trim().toLowerCase(); final list = q.isEmpty ? all : all.where((s) => s.englishName.toLowerCase().contains(q) || s.name.contains(query.trim()) || '${s.number}' == q).toList();
-    return ListView(padding: const EdgeInsets.all(18), children: [const Text('Quran Kareem', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)), const Text('القرآن الكريم', style: TextStyle(color: gold, fontSize: 20)), const SizedBox(height: 14), TextField(onChanged: (v) => setState(() => query = v), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search Surah')), const SizedBox(height: 12), appBox(const Text('114 Surahs  •  6236 Ayahs  •  Uthmani text')), const SizedBox(height: 8), ...list.map((s) => Card(child: ListTile(onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ReaderPage(surah: s))), leading: CircleAvatar(backgroundColor: forest, child: Text('${s.number}')), title: Text(s.englishName), subtitle: Text('${s.verses.length} Ayahs  •  ${s.revelationType}'), trailing: Text(s.name, style: const TextStyle(fontSize: 18))))) ]);
-  });
+  @override void initState(){super.initState();future=QuranService().load();}
+  @override Widget build(BuildContext context){
+    return FutureBuilder<List<Surah>>(future:future,builder:(context,snapshot){
+      if(snapshot.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator());
+      if(snapshot.hasError||snapshot.data==null)return Center(child:FilledButton(onPressed:()=>setState(()=>future=QuranService().load()),child:const Text('Retry Quran')));
+      final q=query.toLowerCase();
+      final list=snapshot.data!.where((s)=>q.isEmpty||s.englishName.toLowerCase().contains(q)||s.name.contains(query)).toList();
+      return ListView(padding:const EdgeInsets.all(18),children:[
+        const Text('Quran Kareem',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),
+        const Text('القرآن الكريم',style:TextStyle(color:gold,fontSize:20)),
+        const SizedBox(height:12),
+        TextField(onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search Surah')),
+        const SizedBox(height:12),
+        ...list.map((s)=>Card(child:ListTile(leading:CircleAvatar(backgroundColor:forest,child:Text('${s.number}')),title:Text(s.englishName),subtitle:Text('${s.verses.length} Ayahs'),trailing:Text(s.name),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>ReaderPage(surah:s))))),
+      ]);
+    });
+  }
 }
-
-class ReaderPage extends StatelessWidget { final Surah surah; const ReaderPage({super.key,required this.surah}); @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(surah.englishName)),body:ListView(padding:const EdgeInsets.all(18),children:[Text(surah.name,textAlign:TextAlign.center,style:const TextStyle(fontSize:34,fontWeight:FontWeight.bold)),Text(surah.translation,textAlign:TextAlign.center),const SizedBox(height:18),Text(surah.verses.map((a)=>'${a.text} ۝${a.numberInSurah}').join('  '),textAlign:TextAlign.right,style:const TextStyle(fontSize:31,height:2.1))])); }
-class PrayerPage extends StatelessWidget { final AlarmService alarms; const PrayerPage({super.key,required this.alarms}); @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Prayer Times')),body:Column(children:[Expanded(child:DashboardPage(alarms:alarms)),Padding(padding:const EdgeInsets.all(12),child:OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms))),icon:const Icon(Icons.notifications_active),label:const Text('Adhan & Alarm Settings')))])); }
+class ReaderPage extends StatelessWidget {
+  final Surah surah;
+  const ReaderPage({super.key,required this.surah});
+  @override Widget build(BuildContext context){
+    final text=surah.verses.map((a)=>'${a.text} ۝${a.numberInSurah}').join('  ');
+    return Scaffold(backgroundColor:paper,appBar:AppBar(backgroundColor:paper,foregroundColor:Colors.black87,title:Text(surah.englishName)),body:ListView(padding:const EdgeInsets.all(18),children:[Text(surah.name,textAlign:TextAlign.center,style:const TextStyle(color:Colors.black87,fontSize:34,fontWeight:FontWeight.bold)),Text(surah.translation,textAlign:TextAlign.center,style:const TextStyle(color:Colors.black54)),const SizedBox(height:18),Text(text,textAlign:TextAlign.right,style:const TextStyle(color:Colors.black87,fontSize:31,height:2.1))]));
+  }
+}
+class PrayerPage extends StatelessWidget {
+  final AlarmService alarms;
+  const PrayerPage({super.key,required this.alarms});
+  @override Widget build(BuildContext context){
+    return Scaffold(appBar:AppBar(title:const Text('Prayer Times')),body:Column(children:[Expanded(child:DashboardPage(alarms:alarms)),Padding(padding:const EdgeInsets.all(12),child:OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms))),icon:const Icon(Icons.notifications_active),label:const Text('Adhan & Alarm Settings')))]));
+  }
+}
 class QiblaPage extends StatefulWidget { const QiblaPage({super.key}); @override State<QiblaPage> createState() => _QiblaPageState(); }
 class _QiblaPageState extends State<QiblaPage> {
   StreamSubscription<CompassEvent>? sub; double? heading; double? qibla; String place = 'Finding location…'; bool calibrate = false;
@@ -219,7 +244,7 @@ class _AlarmSettingsPageState extends State<AlarmSettingsPage> {
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Adhan & Alarms')), body: ListView(padding: const EdgeInsets.all(18), children: [appBox(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Adhan sound', style: TextStyle(color: gold, fontWeight: FontWeight.bold)), RadioListTile<String>(value: 'adhan_kuwait', groupValue: sound, onChanged: (v) { if (v != null) _saveSound(v); }, title: const Text('Kuwait Adhan')), RadioListTile<String>(value: 'adhan_dubai', groupValue: sound, onChanged: (v) { if (v != null) _saveSound(v); }, title: const Text('Dubai Adhan')), RadioListTile<String>(value: 'adhan_fajr', groupValue: sound, onChanged: (v) { if (v != null) _saveSound(v); }, title: const Text('Fajr Adhan'))])), const SizedBox(height: 12), appBox(SwitchListTile(value: enabled, onChanged: (v) async { setState(() => enabled = v); await Preferences.setAlarmsEnabled(v); if (v) { await widget.alarms.refreshStoredSchedule(); } else { await widget.alarms.plugin.cancelAll(); } }, title: const Text('Prayer notifications'), subtitle: const Text('Schedule Fajr, Dhuhr, Asr, Maghrib and Isha'))), const SizedBox(height: 12), const Text('Allow notifications and exact alarms in Android settings for reliable Adhan alerts.', style: TextStyle(color: Colors.white54))]));
 }
 
-class MorePage extends StatelessWidget { final AlarmService alarms; const MorePage({super.key,required this.alarms}); @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(18),children:[Row(children:[const BrandMark(size:56),const SizedBox(width:12),const Text('Settings',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900))]),const SizedBox(height:18),appBox(const Text('Prayer times use your GPS location and the selected calculation method.')),ListTile(leading:const Icon(Icons.notifications_active,color:gold),title:const Text('Adhan & Alarm Settings'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms)))),ListTile(leading:const Icon(Icons.explore,color:gold),title:const Text('Qibla Finder'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const QiblaPage()))),ListTile(leading:const Icon(Icons.favorite,color:gold),title:const Text('Duas & Adhkar'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const DuasPage()))),ListTile(leading:const Icon(Icons.nightlight,color:gold),title:const Text('Ramadan'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const RamadanPage()))) ]); }
+class MorePage extends StatelessWidget { final AlarmService alarms; const MorePage({super.key,required this.alarms}); @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(18),children:[Row(children:[const BrandMark(size:56),const SizedBox(width:12),const Text('Settings',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900))]),const SizedBox(height:18),appBox(const Text('Prayer times use your GPS location.')),ListTile(leading:const Icon(Icons.notifications_active,color:gold),title:const Text('Adhan & Alarm Settings'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms)))),ListTile(leading:const Icon(Icons.explore,color:gold),title:const Text('Qibla Finder'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const QiblaPage()))),ListTile(leading:const Icon(Icons.favorite,color:gold),title:const Text('Duas & Adhkar'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const DuasPage()))),ListTile(leading:const Icon(Icons.nightlight,color:gold),title:const Text('Ramadan'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const RamadanPage()))) ]); }
 class HijriDate { final int day, month, year; final String monthName; const HijriDate(this.day, this.month, this.year, this.monthName); String get display => '$day $monthName $year AH'; }
 class HijriService {
   static Future<HijriDate?> today() async {
