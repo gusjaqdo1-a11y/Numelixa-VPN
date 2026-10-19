@@ -85,7 +85,7 @@ class PrayerService {
   Future<String> reversePlace(double latitude, double longitude) async {
     try {
       final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$latitude&lon=$longitude&zoom=10&accept-language=en');
-      final r = await http.get(uri, headers: const {'User-Agent': 'HudaWay/1.0 (Muslim prayer app)'}).timeout(const Duration(seconds: 8));
+      final r = await http.get(uri, headers: const {'User-Agent': 'HudaWay/1.1 (Muslim prayer app)'}).timeout(const Duration(seconds: 8));
       if (r.statusCode == 200) {
         final d = jsonDecode(r.body) as Map<String, dynamic>;
         final a = (d['address'] as Map?)?.cast<String, dynamic>();
@@ -142,9 +142,9 @@ class AlarmService {
   Future<void> refreshStoredSchedule() async { try { await scheduleNextDays(PrayerService(), days: 7); } catch (_) {} }
   Future<void> showLockCalendar(String dateText) async {
     if (!ready) return;
-    await plugin.show(id: 9901, title: 'HudaWay • Arabic Calendar', body: dateText, notificationDetails: const NotificationDetails(android: AndroidNotificationDetails('hudaway_calendar', 'HudaWay Calendar', channelDescription: 'Hijri date on the lock screen', importance: Importance.low, priority: Priority.low, ongoing: true, autoCancel: false, playSound: false, visibility: NotificationVisibility.public)));
+    await plugin.show(id: 9901, title: 'HudaWay • Arabic Calendar', body: dateText, notificationDetails: const NotificationDetails(android: AndroidNotificationDetails('hudaway_calendar', 'HudaWay Calendar', channelDescription: 'Hijri date on the lock screen', importance: Importance.low, priority: Priority.low, ongoing: true, autoCancel: false, playSound: false, visibility: NotificationVisibility.public));
   }
-  Future<void> hideLockCalendar() async { if (ready) await plugin.cancel(9901); }
+  Future<void> hideLockCalendar() async { if (ready) await plugin.cancel(id: 9901); }
 }
 
 class Preferences {
