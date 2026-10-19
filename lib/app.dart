@@ -179,7 +179,7 @@ class _QuranPageState extends State<QuranPage> {
         const SizedBox(height:12),
         TextField(onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search Surah')),
         const SizedBox(height:12),
-        ...list.map((s)=>Card(child:ListTile(leading:CircleAvatar(backgroundColor:forest,child:Text('${s.number}')),title:Text(s.englishName),subtitle:Text('${s.verses.length} Ayahs'),trailing:Text(s.name),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>ReaderPage(surah:s))))),
+        ...list.map((s)=>Card(child:ListTile(leading:CircleAvatar(backgroundColor:forest,child:Text('${s.number}')),title:Text(s.englishName),subtitle:Text('${s.verses.length} Ayahs'),trailing:Text(s.name),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>ReaderPage(surah:s)))))) ,
       ]);
     });
   }
