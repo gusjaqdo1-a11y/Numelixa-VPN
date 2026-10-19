@@ -23,11 +23,11 @@ jobs:
           from pathlib import Path
           app = Path('lib/app.dart')
           lines = app.read_text().splitlines()
-          target = next((i for i, line in enumerate(lines) if "Prayer Times" in line and "prayers!.map" in line), None)
-          if target is None:
-              raise SystemExit('PrayerPage build line not found')
+          cls = next(i for i,line in enumerate(lines) if line.startswith('class _PrayerPageState'))
+          start = next(i for i in range(cls, len(lines)) if lines[i].strip().startswith('@override'))
+          end = next(i for i in range(start, len(lines)) if lines[i].startswith('class QiblaPage'))
           replacement = "  @override Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(18), children: [Row(children: [const Expanded(child: Text('Prayer Times', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))), IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.refresh, color: gold))]), appBox(Row(children: [const Icon(Icons.location_on, color: gold), const SizedBox(width: 10), Expanded(child: Text(place)), IconButton(onPressed: load, icon: const Icon(Icons.my_location))])), const SizedBox(height: 12), if (prayers == null) appBox(Column(children: [const Text('Allow location to calculate your local prayer times.', textAlign: TextAlign.center), const SizedBox(height: 12), FilledButton(onPressed: loading ? null : load, child: Text(loading ? 'Loading…' : 'Use my location'))])) else ...prayers!.map((p) => appBox(ListTile(leading: Icon(p.name == 'Sunrise' ? Icons.wb_sunny : Icons.mosque, color: gold), title: Text(p.name), subtitle: Text(p.arabic), trailing: Text(DateFormat('h:mm a').format(p.time), style: const TextStyle(color: gold, fontWeight: FontWeight.bold))))), OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => AlarmSettingsPage(alarms: widget.alarms))), icon: const Icon(Icons.notifications_active), label: const Text('Adhan & Alarm Settings'))]);"
-          lines[target:target+1] = [replacement]
+          lines[start:end] = [replacement]
           app.write_text('\n'.join(lines) + '\n')
           services = Path('lib/services.dart')
           services.write_text(services.read_text().replace('visibility: NotificationVisibility.public));', 'visibility: NotificationVisibility.public)));'))
@@ -36,7 +36,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if ! git diff --quiet -- lib/app.dart lib/services.dart; then
             git add lib/app.dart lib/services.dart
-            git commit -m 'fix: finalize Dart source repairs [skip ci]'
+            git commit -m 'fix: replace malformed PrayerPage and notification syntax [skip ci]'
             git push
           fi
 
