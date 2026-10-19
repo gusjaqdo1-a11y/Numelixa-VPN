@@ -142,7 +142,7 @@ class AlarmService {
   Future<void> refreshStoredSchedule() async { try { await scheduleNextDays(PrayerService(), days: 7); } catch (_) {} }
   Future<void> showLockCalendar(String dateText) async {
     if (!ready) return;
-    await plugin.show(id: 9901, title: 'HudaWay • Arabic Calendar', body: dateText, notificationDetails: const NotificationDetails(android: AndroidNotificationDetails('hudaway_calendar', 'HudaWay Calendar', channelDescription: 'Hijri date on the lock screen', importance: Importance.low, priority: Priority.low, ongoing: true, autoCancel: false, playSound: false, visibility: NotificationVisibility.public));
+    await plugin.show(id: 9901, title: 'HudaWay • Arabic Calendar', body: dateText, notificationDetails: const NotificationDetails(android: AndroidNotificationDetails('hudaway_calendar', 'HudaWay Calendar', channelDescription: 'Hijri date on the lock screen', importance: Importance.low, priority: Priority.low, ongoing: true, autoCancel: false, playSound: false, visibility: NotificationVisibility.public)));
   }
   Future<void> hideLockCalendar() async { if (ready) await plugin.cancel(id: 9901); }
 }
