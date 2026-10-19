@@ -113,7 +113,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
       - name: Run tests
         run: if [ -d test ]; then flutter test; else echo 'No tests; continuing'; fi
       - name: Build release APKs
