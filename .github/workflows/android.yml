@@ -63,10 +63,18 @@ jobs:
           gradle = Path('android/app/build.gradle.kts')
           x = gradle.read_text()
           x = x.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36')
-          # Keep Android build configuration conservative: no core-library desugaring is needed
-          # by this app, so do not enable it or add a desugaring dependency.
-          x = x.replace('        isCoreLibraryDesugaringEnabled = true\n', '')
-          x = x.replace('    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n', '')
+
+          # flutter_local_notifications requires Android core-library desugaring.
+          # Force a single, valid configuration even if the generated Flutter template changes.
+          lines = [line for line in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in line and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in line]
+          x = '\n'.join(lines) + '\n'
+          if 'isCoreLibraryDesugaringEnabled = true' not in x:
+              x = x.replace('compileOptions {', 'compileOptions {\n        isCoreLibraryDesugaringEnabled = true', 1)
+          if 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")' not in x:
+              if 'dependencies {' in x:
+                  x = x.replace('dependencies {', 'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")', 1)
+              else:
+                  x += '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n}\n'
           gradle.write_text(x)
           PY
 
@@ -77,7 +85,12 @@ jobs:
         run: flutter analyze
 
       - name: Run tests
-        run: flutter test
+        run: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "No test directory yet; continuing to release build."
+          fi
 
       - name: Build release APKs
         run: flutter build apk --release --split-per-abi
