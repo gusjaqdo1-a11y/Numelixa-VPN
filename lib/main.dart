@@ -1,19 +1,22 @@
 import 'dart:math' as math;
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+
 import 'models.dart';
 import 'services.dart';
 
-const emerald = Color(0xFF0B5D45);
-const deep = Color(0xFF061A14);
-const gold = Color(0xFFD6A63A);
+const Color emerald = Color(0xFF0B5D45);
+const Color deep = Color(0xFF061A14);
+const Color gold = Color(0xFFD6A63A);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final alarms = AlarmService();
-  await alarms.init();
+  try {
+    await alarms.init();
+  } catch (_) {}
   runApp(HudaWayApp(alarms: alarms));
 }
 
@@ -31,6 +34,14 @@ class HudaWayApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: deep,
         colorScheme: ColorScheme.fromSeed(seedColor: emerald, brightness: Brightness.dark),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.05),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
       home: HomeShell(alarms: alarms),
     );
@@ -57,11 +68,12 @@ class _HomeShellState extends State<HomeShell> {
       const DhikrPage(),
       const MorePage(),
     ];
+
     return Scaffold(
       body: SafeArea(child: IndexedStack(index: index, children: pages)),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
-        onDestinationSelected: (v) => setState(() => index = v),
+        onDestinationSelected: (value) => setState(() => index = value),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Quran'),
@@ -74,7 +86,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-Widget glass(BuildContext context, {required Widget child, EdgeInsets padding = const EdgeInsets.all(18)}) {
+Widget panel({required Widget child, EdgeInsets padding = const EdgeInsets.all(18)}) {
   return Container(
     padding: padding,
     decoration: BoxDecoration(
@@ -91,15 +103,18 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateTime.now();
+    final today = DateFormat('EEEE, d MMMM y').format(DateTime.now());
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
+        const SizedBox(height: 8),
         Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SvgPicture.asset('assets/brand/logo.svg', width: 58, height: 58),
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(color: emerald, borderRadius: BorderRadius.circular(18)),
+              child: const Icon(Icons.auto_awesome, color: gold, size: 30),
             ),
             const SizedBox(width: 14),
             const Expanded(
@@ -107,7 +122,7 @@ class DashboardPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Assalamu Alaikum', style: TextStyle(color: Colors.white60)),
-                  Text('HudaWay', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900)),
+                  Text('HudaWay', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
                 ],
               ),
             ),
@@ -117,14 +132,13 @@ class DashboardPage extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        glass(
-          context,
+        const SizedBox(height: 22),
+        panel(
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [Icon(Icons.auto_awesome, color: gold), SizedBox(width: 8), Text('Ayah of the day', style: TextStyle(color: gold, fontWeight: FontWeight.bold))]),
-              SizedBox(height: 12),
+              SizedBox(height: 14),
               Text('إِنَّ مَعَ الْعُسْرِ يُسْرًا', textAlign: TextAlign.right, style: TextStyle(fontSize: 29, height: 1.8, fontWeight: FontWeight.w700)),
               SizedBox(height: 8),
               Text('Indeed, with hardship comes ease.', style: TextStyle(color: Colors.white70)),
@@ -134,28 +148,37 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        Row(children: [
-          Expanded(child: _action(context, Icons.menu_book, 'Quran', 'Read & listen', const QuranPage())),
-          const SizedBox(width: 12),
-          Expanded(child: _action(context, Icons.explore, 'Qibla', 'Find direction', const QiblaPage())),
-        ]),
+        Row(
+          children: [
+            Expanded(child: _quick(context, Icons.menu_book, 'Quran', 'Read & listen', const QuranPage())),
+            const SizedBox(width: 12),
+            Expanded(child: _quick(context, Icons.explore, 'Qibla', 'Find direction', const QiblaPage())),
+          ],
+        ),
         const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: _action(context, Icons.favorite_outline, 'Duas', 'Daily adhkar', const DuasPage())),
-          const SizedBox(width: 12),
-          Expanded(child: _action(context, Icons.nightlight_outlined, 'Ramadan', 'Fasting tools', const RamadanPage())),
-        ]),
+        Row(
+          children: [
+            Expanded(child: _quick(context, Icons.favorite_outline, 'Duas', 'Daily adhkar', const DuasPage())),
+            const SizedBox(width: 12),
+            Expanded(child: _quick(context, Icons.nightlight_outlined, 'Ramadan', 'Fasting tools', const RamadanPage())),
+          ],
+        ),
         const SizedBox(height: 14),
-        glass(
-          context,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        panel(
+          child: Row(
             children: [
-              const Text('Today', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Row(children: [const Icon(Icons.calendar_month, color: gold), const SizedBox(width: 10), Expanded(child: Text(DateFormat('EEEE, d MMMM y').format(date)))]),
-              const SizedBox(height: 10),
-              const Text('Quran, prayer times, Qibla, duas and dhikr — all in one place.', style: TextStyle(color: Colors.white54, height: 1.45)),
+              const Icon(Icons.calendar_month, color: gold),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Today', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(today, style: const TextStyle(color: Colors.white60)),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -163,17 +186,23 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  static Widget _action(BuildContext context, IconData icon, String title, String subtitle, Widget page) {
+  static Widget _quick(BuildContext context, IconData icon, String title, String subtitle, Widget page) {
     return InkWell(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
       borderRadius: BorderRadius.circular(22),
-      child: glass(context, padding: const EdgeInsets.all(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: gold, size: 28),
-        const SizedBox(height: 12),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 3),
-        Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-      ])),
+      child: panel(
+        padding: const EdgeInsets.all(15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: gold, size: 28),
+            const SizedBox(height: 12),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -186,7 +215,7 @@ class QuranPage extends StatefulWidget {
 }
 
 class _QuranPageState extends State<QuranPage> {
-  final service = QuranService();
+  final QuranService service = QuranService();
   late Future<List<Surah>> future;
   String query = '';
 
@@ -202,35 +231,65 @@ class _QuranPageState extends State<QuranPage> {
       future: future,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Text('Quran data could not be loaded.'),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: () => setState(() => future = service.load()), child: const Text('Retry')),
-          ]));
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: gold, size: 48),
+                  const SizedBox(height: 12),
+                  const Text('Quran data could not be loaded.', textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  FilledButton(onPressed: () => setState(() => future = service.load()), child: const Text('Retry')),
+                ],
+              ),
+            ),
+          );
         }
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        final q = query.toLowerCase();
-        final list = snapshot.data!.where((s) => s.englishName.toLowerCase().contains(q) || s.name.contains(query)).toList();
-        return ListView(padding: const EdgeInsets.all(18), children: [
-          const Text('Quran', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          const Text('القرآن الكريم', style: TextStyle(color: gold, fontSize: 18)),
-          const SizedBox(height: 16),
-          TextField(onChanged: (v) => setState(() => query = v), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search a Surah')),
-          const SizedBox(height: 14),
-          glass(context, child: const Row(children: [Icon(Icons.collections_bookmark_outlined, color: gold), SizedBox(width: 12), Expanded(child: Text('114 Surahs • Arabic Quran', style: TextStyle(fontWeight: FontWeight.w700)))])),
-          const SizedBox(height: 12),
-          ...list.map((s) => Card(
-            color: Colors.white.withValues(alpha: 0.04),
-            child: ListTile(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReaderPage(surah: s))),
-              leading: CircleAvatar(backgroundColor: emerald, child: Text('${s.number}')),
-              title: Text(s.englishName, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text('${s.revelationType} · ${s.ayahs} Ayahs'),
-              trailing: Text(s.name, style: const TextStyle(fontSize: 18)),
+
+        final text = query.trim().toLowerCase();
+        final surahs = snapshot.data!.where((surah) {
+          return text.isEmpty ||
+              surah.englishName.toLowerCase().contains(text) ||
+              surah.name.contains(query.trim());
+        }).toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            const Text('Quran', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 4),
+            const Text('القرآن الكريم', style: TextStyle(color: gold, fontSize: 18)),
+            const SizedBox(height: 16),
+            TextField(
+              onChanged: (value) => setState(() => query = value),
+              decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search a Surah'),
             ),
-          )),
-        ]);
+            const SizedBox(height: 14),
+            panel(
+              child: const Row(
+                children: [
+                  Icon(Icons.menu_book, color: gold),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('114 Surahs · Arabic Quran', style: TextStyle(fontWeight: FontWeight.w700))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...surahs.map((surah) => Card(
+              color: Colors.white.withValues(alpha: 0.04),
+              child: ListTile(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReaderPage(surah: surah))),
+                leading: CircleAvatar(backgroundColor: emerald, child: Text('${surah.number}')),
+                title: Text(surah.englishName, style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text('${surah.revelationType} · ${surah.ayahs} Ayahs'),
+                trailing: Text(surah.name, style: const TextStyle(fontSize: 18)),
+              ),
+            )),
+          ],
+        );
       },
     );
   }
@@ -245,7 +304,7 @@ class ReaderPage extends StatefulWidget {
 }
 
 class _ReaderPageState extends State<ReaderPage> {
-  final player = AudioPlayer();
+  final AudioPlayer player = AudioPlayer();
   int? playing;
 
   @override
@@ -254,7 +313,7 @@ class _ReaderPageState extends State<ReaderPage> {
     super.dispose();
   }
 
-  Future<void> play(Ayah ayah) async {
+  Future<void> playAyah(Ayah ayah) async {
     if (playing == ayah.number) {
       await player.stop();
       if (mounted) setState(() => playing = null);
@@ -269,27 +328,44 @@ class _ReaderPageState extends State<ReaderPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.surah.englishName)),
-      body: ListView(padding: const EdgeInsets.all(18), children: [
-        glass(context, child: Column(children: [
-          Text(widget.surah.name, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 5),
-          Text(widget.surah.translation, style: const TextStyle(color: Colors.white54)),
-          const SizedBox(height: 8),
-          Text('${widget.surah.revelationType} · ${widget.surah.ayahs} verses', style: const TextStyle(color: gold, fontSize: 12)),
-        ])),
-        const SizedBox(height: 14),
-        ...widget.surah.verses.map((a) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: glass(context, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              CircleAvatar(radius: 15, backgroundColor: emerald, child: Text('${a.numberInSurah}', style: const TextStyle(fontSize: 11))),
-              const Spacer(),
-              IconButton(onPressed: () => play(a), icon: Icon(playing == a.number ? Icons.stop_circle : Icons.play_circle_outline, color: gold)),
-            ]),
-            Text(a.text, textAlign: TextAlign.right, style: const TextStyle(fontSize: 27, height: 1.9, fontWeight: FontWeight.w600)),
-          ])),
-        )),
-      ]),
+      body: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          panel(
+            child: Column(
+              children: [
+                Text(widget.surah.name, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                Text(widget.surah.translation, style: const TextStyle(color: Colors.white54)),
+                const SizedBox(height: 8),
+                Text('${widget.surah.revelationType} · ${widget.surah.ayahs} verses', style: const TextStyle(color: gold, fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...widget.surah.verses.map((ayah) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: panel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(radius: 15, backgroundColor: emerald, child: Text('${ayah.numberInSurah}', style: const TextStyle(fontSize: 11))),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => playAyah(ayah),
+                        icon: Icon(playing == ayah.number ? Icons.stop_circle : Icons.play_circle_outline, color: gold),
+                      ),
+                    ],
+                  ),
+                  Text(ayah.text, textAlign: TextAlign.right, style: const TextStyle(fontSize: 27, height: 1.9, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          )),
+        ],
+      ),
     );
   }
 }
@@ -305,41 +381,88 @@ class PrayerPage extends StatefulWidget {
 class _PrayerPageState extends State<PrayerPage> {
   List<PrayerEntry>? prayers;
   bool loading = false;
-  String place = 'Location not set';
+  String locationText = 'Location not set';
 
-  Future<void> load() async {
+  Future<void> loadPrayerTimes() async {
     setState(() => loading = true);
-    final p = await PrayerService().location();
-    if (p != null) {
-      final list = PrayerService().calculate(p.latitude, p.longitude, DateTime.now());
+    try {
+      final position = await PrayerService().location();
+      if (position == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enable location permission.')));
+        }
+        return;
+      }
+
+      final list = PrayerService().calculate(position.latitude, position.longitude, DateTime.now());
       await widget.alarms.scheduleAll(list);
-      if (mounted) setState(() { prayers = list; place = '${p.latitude.toStringAsFixed(2)}, ${p.longitude.toStringAsFixed(2)}'; });
+      if (mounted) {
+        setState(() {
+          prayers = list;
+          locationText = '${position.latitude.toStringAsFixed(2)}, ${position.longitude.toStringAsFixed(2)}';
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not calculate prayer times: $error')));
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
     }
-    if (mounted) setState(() => loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(padding: const EdgeInsets.all(18), children: [
-      Row(children: [const Expanded(child: Text('Prayer Times', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))), IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.my_location, color: gold))]),
-      Text(place, style: const TextStyle(color: Colors.white54)),
-      const SizedBox(height: 18),
-      if (prayers == null)
-        glass(context, child: Column(children: [
-          const Icon(Icons.location_on_outlined, color: gold, size: 45),
-          const SizedBox(height: 10),
-          const Text('Allow location to calculate local prayer times.', textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          FilledButton(onPressed: loading ? null : load, child: Text(loading ? 'Finding location…' : 'Use my location')),
-        ]))
-      else
-        ...prayers!.map((p) => Padding(padding: const EdgeInsets.only(bottom: 10), child: glass(context, child: Row(children: [
-          CircleAvatar(backgroundColor: emerald, child: const Icon(Icons.mosque_outlined)),
-          const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(p.name, style: const TextStyle(fontWeight: FontWeight.w800)), Text(p.arabic, style: const TextStyle(color: gold))])),
-          Text(DateFormat('h:mm a').format(p.time), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-        ]))),
-    ]);
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        Row(
+          children: [
+            const Expanded(child: Text('Prayer Times', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
+            IconButton(onPressed: loading ? null : loadPrayerTimes, icon: const Icon(Icons.my_location, color: gold)),
+          ],
+        ),
+        Text(locationText, style: const TextStyle(color: Colors.white54)),
+        const SizedBox(height: 18),
+        if (prayers == null)
+          panel(
+            child: Column(
+              children: [
+                const Icon(Icons.location_on_outlined, color: gold, size: 48),
+                const SizedBox(height: 10),
+                const Text('Allow location to calculate your local prayer times.', textAlign: TextAlign.center),
+                const SizedBox(height: 14),
+                FilledButton(
+                  onPressed: loading ? null : loadPrayerTimes,
+                  child: Text(loading ? 'Finding location…' : 'Use my location'),
+                ),
+              ],
+            ),
+          )
+        else
+          ...prayers!.map((prayer) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: panel(
+              child: Row(
+                children: [
+                  CircleAvatar(backgroundColor: emerald, child: const Icon(Icons.mosque_outlined)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(prayer.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        Text(prayer.arabic, style: const TextStyle(color: gold)),
+                      ],
+                    ),
+                  ),
+                  Text(DateFormat('h:mm a').format(prayer.time), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+          )),
+      ],
+    );
   }
 }
 
@@ -351,38 +474,57 @@ class DhikrPage extends StatefulWidget {
 }
 
 class _DhikrPageState extends State<DhikrPage> {
+  static const options = ['SubhanAllah', 'Alhamdulillah', 'Allahu Akbar', 'La ilaha illallah', 'Astaghfirullah'];
   int count = 0;
   int target = 33;
   String dhikr = 'SubhanAllah';
 
   @override
   Widget build(BuildContext context) {
-    const options = ['SubhanAllah', 'Alhamdulillah', 'Allahu Akbar', 'La ilaha illallah', 'Astaghfirullah'];
-    return ListView(padding: const EdgeInsets.all(18), children: [
-      const Text('Tasbeeh', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 18),
-      DropdownButtonFormField<String>(
-        initialValue: dhikr,
-        decoration: const InputDecoration(labelText: 'Dhikr'),
-        items: options.map((x) => DropdownMenuItem(value: x, child: Text(x))).toList(),
-        onChanged: (v) => setState(() => dhikr = v ?? dhikr),
-      ),
-      const SizedBox(height: 14),
-      glass(context, child: Column(children: [
-        Text(dhikr, style: const TextStyle(color: gold, fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 20),
-        Text('$count', style: const TextStyle(fontSize: 80, fontWeight: FontWeight.w900)),
-        Text('Target $target', style: const TextStyle(color: Colors.white54)),
-        const SizedBox(height: 20),
-        GestureDetector(
-          onTap: () => setState(() => count = count >= target ? 0 : count + 1),
-          child: Container(width: 190, height: 190, decoration: BoxDecoration(shape: BoxShape.circle, color: emerald, border: Border.all(color: gold, width: 2)), child: const Center(child: Text('TAP', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900)))),
-        ),
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        const Text('Tasbeeh', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
         const SizedBox(height: 18),
-        Wrap(spacing: 8, children: [33, 34, 99, 100].map((x) => ChoiceChip(label: Text('$x'), selected: target == x, onSelected: (_) => setState(() { target = x; count = 0; }))).toList()),
-        TextButton(onPressed: () => setState(() => count = 0), child: const Text('Reset')),
-      ])),
-    ]);
+        DropdownButtonFormField<String>(
+          initialValue: dhikr,
+          decoration: const InputDecoration(labelText: 'Dhikr'),
+          items: options.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+          onChanged: (value) => setState(() => dhikr = value ?? dhikr),
+        ),
+        const SizedBox(height: 14),
+        panel(
+          child: Column(
+            children: [
+              Text(dhikr, style: const TextStyle(color: gold, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 18),
+              Text('$count', style: const TextStyle(fontSize: 76, fontWeight: FontWeight.w900)),
+              Text('Target $target', style: const TextStyle(color: Colors.white54)),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () => setState(() => count = count >= target ? 0 : count + 1),
+                child: Container(
+                  width: 190,
+                  height: 190,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: emerald, border: Border.all(color: gold, width: 2)),
+                  child: const Center(child: Text('TAP', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900))),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 8,
+                children: [33, 34, 99, 100].map((value) => ChoiceChip(
+                  label: Text('$value'),
+                  selected: target == value,
+                  onSelected: (_) => setState(() { target = value; count = 0; }),
+                )).toList(),
+              ),
+              TextButton(onPressed: () => setState(() => count = 0), child: const Text('Reset')),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -391,48 +533,71 @@ class MorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(padding: const EdgeInsets.all(18), children: [
-      const Text('Explore', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 16),
-      _menu(context, Icons.explore, 'Qibla', 'Find the direction of the Kaaba', const QiblaPage()),
-      _menu(context, Icons.favorite, 'Duas & Adhkar', 'Daily supplications', const DuasPage()),
-      _menu(context, Icons.nightlight, 'Ramadan', 'Fasting and worship tools', const RamadanPage()),
-      _menu(context, Icons.headphones, 'Quran Audio', 'Listen to recitations', const AudioQuranPage()),
-      _menu(context, Icons.settings_outlined, 'Settings', 'App settings', const SettingsPage()),
-    ]);
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        const Text('Explore', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 16),
+        _item(context, Icons.explore, 'Qibla', 'Find the direction of the Kaaba', const QiblaPage()),
+        _item(context, Icons.favorite, 'Duas & Adhkar', 'Daily supplications', const DuasPage()),
+        _item(context, Icons.nightlight, 'Ramadan', 'Fasting and worship tools', const RamadanPage()),
+        _item(context, Icons.headphones, 'Quran Audio', 'Listen to recitations', const AudioQuranPage()),
+        _item(context, Icons.settings_outlined, 'Settings', 'App information', const SettingsPage()),
+      ],
+    );
   }
 
-  static Widget _menu(BuildContext context, IconData icon, String title, String subtitle, Widget page) {
-    return Card(child: ListTile(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
-      leading: CircleAvatar(backgroundColor: emerald, child: Icon(icon)),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-    ));
+  static Widget _item(BuildContext context, IconData icon, String title, String subtitle, Widget page) {
+    return Card(
+      child: ListTile(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
+        leading: CircleAvatar(backgroundColor: emerald, child: Icon(icon)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+      ),
+    );
   }
 }
 
 class DuasPage extends StatelessWidget {
   const DuasPage({super.key});
-  static const groups = <List<String>>[
-    ['Morning', 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ', 'We have entered the morning and the dominion belongs to Allah.'],
-    ['Evening', 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ', 'We have entered the evening and the dominion belongs to Allah.'],
-    ['Before sleep', 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', 'In Your name, O Allah, I die and I live.'],
-    ['Seeking forgiveness', 'أَسْتَغْفِرُ اللَّهَ', 'I seek forgiveness from Allah.'],
+
+  static const duas = <Map<String, String>>[
+    {'title': 'Morning', 'arabic': 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ', 'meaning': 'We have entered the morning and the dominion belongs to Allah.'},
+    {'title': 'Evening', 'arabic': 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ', 'meaning': 'We have entered the evening and the dominion belongs to Allah.'},
+    {'title': 'Before sleep', 'arabic': 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', 'meaning': 'In Your name, O Allah, I die and I live.'},
+    {'title': 'After waking', 'arabic': 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا', 'meaning': 'Praise belongs to Allah who gave us life after causing us to die.'},
+    {'title': 'Seeking forgiveness', 'arabic': 'أَسْتَغْفِرُ اللَّهَ', 'meaning': 'I seek forgiveness from Allah.'},
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('Duas & Adhkar')), body: ListView(padding: const EdgeInsets.all(18), children: [
-      ...groups.map((d) => Padding(padding: const EdgeInsets.only(bottom: 12), child: glass(context, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(d[0], style: const TextStyle(color: gold, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        Text(d[1], textAlign: TextAlign.right, style: const TextStyle(fontSize: 23, height: 1.7)),
-        const SizedBox(height: 8),
-        Text(d[2], style: const TextStyle(color: Colors.white70, height: 1.45)),
-      ])))),
-    ]));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Duas & Adhkar')),
+      body: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          panel(child: const Text('Daily supplications. Religious references should be checked against an authenticated source.', style: TextStyle(color: Colors.white60, height: 1.5))),
+          const SizedBox(height: 14),
+          ...duas.map((dua) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: panel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(dua['title']!, style: const TextStyle(color: gold, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Text(dua['arabic']!, textAlign: TextAlign.right, style: const TextStyle(fontSize: 23, height: 1.7)),
+                  const SizedBox(height: 8),
+                  Text(dua['meaning']!, style: const TextStyle(color: Colors.white70, height: 1.45)),
+                ],
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
   }
 }
 
@@ -444,7 +609,7 @@ class QiblaPage extends StatefulWidget {
 }
 
 class _QiblaPageState extends State<QiblaPage> {
-  double? qibla;
+  double? bearing;
   String status = 'Finding your location…';
 
   @override
@@ -454,27 +619,65 @@ class _QiblaPageState extends State<QiblaPage> {
   }
 
   Future<void> load() async {
-    final p = await PrayerService().location();
-    if (p == null) {
+    final position = await PrayerService().location();
+    if (position == null) {
       if (mounted) setState(() => status = 'Location permission is required.');
       return;
     }
-    final lat1 = p.latitude * math.pi / 180;
-    final lon1 = p.longitude * math.pi / 180;
-    const lat2 = 21.422487 * math.pi / 180;
-    const lon2 = 39.826206 * math.pi / 180;
-    final dLon = lon2 - lon1;
-    final y = math.sin(dLon) * math.cos(lat2);
-    final x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
-    final bearing = (math.atan2(y, x) * 180 / math.pi + 360) % 360;
-    if (mounted) setState(() { qibla = bearing; status = 'Qibla bearing from your location'; });
+
+    const kaabaLat = 21.422487;
+    const kaabaLon = 39.826206;
+    final lat1 = position.latitude * math.pi / 180;
+    final lon1 = position.longitude * math.pi / 180;
+    final lat2 = kaabaLat * math.pi / 180;
+    final lon2 = kaabaLon * math.pi / 180;
+    final deltaLon = lon2 - lon1;
+    final y = math.sin(deltaLon) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(deltaLon);
+    final value = (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+
+    if (mounted) {
+      setState(() {
+        bearing = value;
+        status = 'Qibla bearing from your location';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('Qibla')), body: Center(child: Padding(padding: const EdgeInsets.all(22), child: qibla == null
-      ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.explore_outlined, size: 80, color: gold), const SizedBox(height: 16), Text(status, textAlign: TextAlign.center), const SizedBox(height: 16), FilledButton(onPressed: load, child: const Text('Try again'))])
-      : glass(context, child: Column(children: [const Icon(Icons.navigation, size: 100, color: gold), const SizedBox(height: 12), Text('${qibla!.round()}°', style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900)), const SizedBox(height: 8), Text(status, style: const TextStyle(color: Colors.white54)), const SizedBox(height: 18), const Text('Point your phone toward this bearing. Live compass mode can be added next.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.4))]))));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Qibla')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: bearing == null
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.explore_outlined, size: 80, color: gold),
+                    const SizedBox(height: 16),
+                    Text(status, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    FilledButton(onPressed: load, child: const Text('Try again')),
+                  ],
+                )
+              : panel(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.navigation, size: 100, color: gold),
+                      const SizedBox(height: 12),
+                      Text('${bearing!.round()}°', style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 8),
+                      Text(status, style: const TextStyle(color: Colors.white54)),
+                      const SizedBox(height: 18),
+                      const Text('Point your phone toward the calculated bearing. Live compass support can be enabled on compatible devices.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, height: 1.4)),
+                    ],
+                  ),
+                ),
+        ),
+      ),
+    );
   }
 }
 
@@ -483,30 +686,75 @@ class RamadanPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('Ramadan')), body: ListView(padding: const EdgeInsets.all(18), children: [
-      glass(context, child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('رمضان كريم', style: TextStyle(fontSize: 30, color: gold, fontWeight: FontWeight.w800)), SizedBox(height: 10), Text('Use local Fajr and Maghrib prayer times for Suhoor and Iftar. Lunar dates can vary by location and moon sighting.', style: TextStyle(color: Colors.white60, height: 1.5))])),
-      const SizedBox(height: 14),
-      _card(context, Icons.wb_twilight, 'Suhoor', 'Finish eating and drinking before Fajr.'),
-      _card(context, Icons.nights_stay, 'Iftar', 'Break the fast at Maghrib.'),
-      _card(context, Icons.menu_book, 'Quran goal', 'Set a daily Quran reading target.'),
-      _card(context, Icons.favorite, 'Duas', 'Keep daily duas and dhikr close.'),
-    ]));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ramadan')),
+      body: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          panel(
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('رمضان كريم', style: TextStyle(fontSize: 30, color: gold, fontWeight: FontWeight.w800)),
+                SizedBox(height: 10),
+                Text('Use local Fajr and Maghrib prayer times for suhoor and iftar. Lunar dates may vary by location and moon sighting.', style: TextStyle(color: Colors.white60, height: 1.5)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _card(Icons.wb_twilight, 'Suhoor', 'Finish eating and drinking before Fajr.'),
+          _card(Icons.nights_stay, 'Iftar', 'Break the fast at Maghrib.'),
+          _card(Icons.menu_book, 'Quran goal', 'Set a daily Quran reading target.'),
+          _card(Icons.favorite, 'Duas', 'Keep daily duas and dhikr close.'),
+        ],
+      ),
+    );
   }
 
-  static Widget _card(BuildContext c, IconData icon, String title, String text) => Padding(padding: const EdgeInsets.only(bottom: 12), child: glass(c, child: Row(children: [CircleAvatar(backgroundColor: emerald, child: Icon(icon)), const SizedBox(width: 14), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 3), Text(text, style: const TextStyle(color: Colors.white54))]))])));
+  static Widget _card(IconData icon, String title, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: panel(
+        child: Row(
+          children: [
+            CircleAvatar(backgroundColor: emerald, child: Icon(icon)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text(text, style: const TextStyle(color: Colors.white54)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class AudioQuranPage extends StatefulWidget {
-  const AudioQuranPage({super.key});
+  final int? surahNumber;
+  const AudioQuranPage({super.key, this.surahNumber});
 
   @override
   State<AudioQuranPage> createState() => _AudioQuranPageState();
 }
 
 class _AudioQuranPageState extends State<AudioQuranPage> {
-  final service = QuranService();
-  final player = AudioPlayer();
+  final QuranService service = QuranService();
+  final AudioPlayer player = AudioPlayer();
   int? playing;
+  late Future<List<Surah>> future;
+
+  @override
+  void initState() {
+    super.initState();
+    future = service.load();
+  }
 
   @override
   void dispose() {
@@ -527,16 +775,29 @@ class _AudioQuranPageState extends State<AudioQuranPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('Quran Audio')), body: FutureBuilder<List<Surah>>(future: service.load(), builder: (context, snapshot) {
-      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-      return ListView(padding: const EdgeInsets.all(18), children: snapshot.data!.map((s) => Card(child: ListTile(
-        onTap: () => play(s.number),
-        leading: CircleAvatar(backgroundColor: emerald, child: Text('${s.number}')),
-        title: Text(s.englishName),
-        subtitle: Text(s.name),
-        trailing: Icon(playing == s.number ? Icons.stop_circle : Icons.play_circle_fill, color: gold),
-      ))).toList());
-    }));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Quran Audio')),
+      body: FutureBuilder<List<Surah>>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Could not load Quran audio list: ${snapshot.error}'));
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          final list = widget.surahNumber == null ? snapshot.data! : snapshot.data!.where((item) => item.number == widget.surahNumber).toList();
+          return ListView(
+            padding: const EdgeInsets.all(18),
+            children: list.map((surah) => Card(
+              child: ListTile(
+                onTap: () => play(surah.number),
+                leading: CircleAvatar(backgroundColor: emerald, child: Text('${surah.number}')),
+                title: Text(surah.englishName),
+                subtitle: Text(surah.name),
+                trailing: Icon(playing == surah.number ? Icons.stop_circle : Icons.play_circle_fill, color: gold),
+              ),
+            )).toList(),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -545,12 +806,27 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('Settings')), body: ListView(padding: const EdgeInsets.all(18), children: [
-      glass(context, child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('HudaWay', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)), SizedBox(height: 6), Text('A Muslim companion for Quran, prayer, Qibla, duas and dhikr.', style: TextStyle(color: Colors.white60))])),
-      const SizedBox(height: 12),
-      const Card(child: ListTile(leading: Icon(Icons.notifications_outlined, color: gold), title: Text('Prayer notifications'), subtitle: Text('Enable notifications from the Prayer page.'))),
-      const Card(child: ListTile(leading: Icon(Icons.language, color: gold), title: Text('Languages'), subtitle: Text('Arabic and English content.'))),
-      const Card(child: ListTile(leading: Icon(Icons.info_outline, color: gold), title: Text('About HudaWay'), subtitle: Text('Version 1.0.0'))),
-    ]);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          panel(
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('HudaWay', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                SizedBox(height: 6),
+                Text('Quran, prayer, Qibla, duas and dhikr in one app.', style: TextStyle(color: Colors.white60)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Card(child: ListTile(leading: Icon(Icons.notifications_outlined, color: gold), title: Text('Prayer notifications'), subtitle: Text('Prayer notifications are scheduled from the Prayer page.'))),
+          const Card(child: ListTile(leading: Icon(Icons.language, color: gold), title: Text('Languages'), subtitle: Text('Arabic and English content.'))),
+          const Card(child: ListTile(leading: Icon(Icons.info_outline, color: gold), title: Text('About HudaWay'), subtitle: Text('Version 1.0.0'))),
+        ],
+      ),
+    );
   }
 }
