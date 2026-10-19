@@ -16,6 +16,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Repair upgraded Dart sources
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          app = Path('lib/app.dart')
+          s = app.read_text()
+          pattern = r"Text\('\$\{p\.name\}\\\s*\n\s*\$\{p\.arabic\}'\)"
+          fixed, count = re.subn(pattern, "Text('${p.name}\\\\n${p.arabic}')", s)
+          if count != 1:
+              raise SystemExit(f'Expected one malformed prayer label, found {count}')
+          app.write_text(fixed)
+          services = Path('lib/services.dart')
+          ss = services.read_text()
+          ss = ss.replace('plugin.cancel(9901)', 'plugin.cancel(id: 9901)')
+          services.write_text(ss)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --quiet -- lib/app.dart lib/services.dart; then
+            git add lib/app.dart lib/services.dart
+            git commit -m 'fix: repair Dart sources for HudaWay build [skip ci]'
+            git push
+          fi
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
