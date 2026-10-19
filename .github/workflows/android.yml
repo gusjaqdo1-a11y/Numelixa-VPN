@@ -15,12 +15,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.7'
           channel: stable
           cache: true
+
       - name: Generate Android platform
         run: |
           rm -rf /tmp/hudaway_android
@@ -28,52 +30,78 @@ jobs:
           cp -R /tmp/hudaway_android/android ./android
           cp /tmp/hudaway_android/.metadata ./.metadata
           cp /tmp/hudaway_android/analysis_options.yaml ./analysis_options.yaml
+
       - name: Prepare Quran data
         run: |
           mkdir -p assets/data
           curl -fsSL --retry 3 https://api.alquran.cloud/v1/quran/quran-uthmani -o assets/data/quran.json
           python3 - <<'PY'
           import json
-          with open('assets/data/quran.json', encoding='utf-8') as f: data=json.load(f)
-          surahs=data.get('data',{}).get('surahs',[])
-          assert len(surahs)==114, f'Expected 114 surahs, got {len(surahs)}'
-          assert sum(len(s.get('ayahs',[])) for s in surahs) >= 6200
+          with open('assets/data/quran.json', encoding='utf-8') as f:
+              data = json.load(f)
+          surahs = data.get('data', {}).get('surahs', [])
+          assert len(surahs) == 114, f'Expected 114 surahs, got {len(surahs)}'
+          assert sum(len(s.get('ayahs', [])) for s in surahs) >= 6200
           print('Quran asset validated:', len(surahs), 'surahs')
           PY
+
       - name: Configure Android
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('android/app/src/main/AndroidManifest.xml')
-          s=p.read_text()
-          marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
-          permissions='''\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n'''
-          if 'SCHEDULE_EXACT_ALARM' not in s: s=s.replace(marker, marker+permissions)
-          s=s.replace('android:label="hudaway"','android:label="HudaWay"')
-          s=s.replace('android:label="hudaway_android"','android:label="HudaWay"')
-          p.write_text(s)
-          q=Path('android/app/build.gradle.kts')
-          if q.exists():
-            x=q.read_text()
-            x=x.replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36')
-            if 'isCoreLibraryDesugaringEnabled' not in x: x=x.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1)
-            if 'coreLibraryDesugaring(' not in x: x=x.replace('dependencies {','dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',1)
-            q.write_text(x)
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          s = manifest.read_text()
+          marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+          permissions = '''\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n'''
+          if 'ACCESS_FINE_LOCATION' not in s:
+              s = s.replace(marker, marker + permissions)
+          s = s.replace('android:label="hudaway"', 'android:label="HudaWay"')
+          s = s.replace('android:label="hudaway_android"', 'android:label="HudaWay"')
+          manifest.write_text(s)
+
+          gradle = Path('android/app/build.gradle.kts')
+          x = gradle.read_text()
+          x = x.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36')
+          # Keep Android build configuration conservative: no core-library desugaring is needed
+          # by this app, so do not enable it or add a desugaring dependency.
+          x = x.replace('        isCoreLibraryDesugaringEnabled = true\n', '')
+          x = x.replace('    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n', '')
+          gradle.write_text(x)
           PY
+
       - name: Install dependencies
         run: flutter pub get
+
       - name: Analyze
         run: flutter analyze
-      - name: Build release APK
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build release APKs
         run: flutter build apk --release --split-per-abi
+
+      - name: Verify APK outputs
+        run: |
+          set -e
+          ls -lh build/app/outputs/flutter-apk/
+          test -s build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          test -s build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          test -s build/app/outputs/flutter-apk/app-x86_64-release.apk
+
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: hudaway-apks
           path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
+
       - name: Create GitHub Release for version tag
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" build/app/outputs/flutter-apk/*.apk --title "HudaWay ${GITHUB_REF_NAME}" --generate-notes
+        run: |
+          gh release create "${GITHUB_REF_NAME}" build/app/outputs/flutter-apk/*.apk \
+            --title "HudaWay ${GITHUB_REF_NAME}" \
+            --generate-notes
