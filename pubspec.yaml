@@ -1,0 +1,33 @@
+name: numelixa_quran
+
+description: Numelixa Quran — a premium Muslim companion with Quran, prayer times, alarms, dhikr, duas and Qibla.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.35.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.5.0
+  shared_preferences: ^2.5.3
+  geolocator: ^14.1.1
+  adhan_dart: ^2.0.1
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.0
+  flutter_svg: ^2.2.0
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/logo.svg
+    - assets/data/quran.json
