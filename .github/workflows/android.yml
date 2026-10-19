@@ -31,9 +31,9 @@ jobs:
           cp /tmp/hudaway_android/.metadata ./.metadata
           cp /tmp/hudaway_android/analysis_options.yaml ./analysis_options.yaml
 
-      - name: Prepare Quran data
+      - name: Prepare Quran and Adhan assets
         run: |
-          mkdir -p assets/data
+          mkdir -p assets/data android/app/src/main/res/raw
           curl -fsSL --retry 3 https://api.alquran.cloud/v1/quran/quran-uthmani -o assets/data/quran.json
           python3 - <<'PY'
           import json
@@ -41,8 +41,25 @@ jobs:
               data = json.load(f)
           surahs = data.get('data', {}).get('surahs', [])
           assert len(surahs) == 114, f'Expected 114 surahs, got {len(surahs)}'
-          assert sum(len(s.get('ayahs', [])) for s in surahs) >= 6200
-          print('Quran asset validated:', len(surahs), 'surahs')
+          assert sum(len(s.get('ayahs', [])) for s in surahs) == 6236
+          print('Quran asset validated: 114 surahs / 6236 ayahs')
+          PY
+
+          python3 - <<'PY'
+          from urllib.parse import quote
+          from pathlib import Path
+          import subprocess
+          base = 'https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main/'
+          files = {
+              'adhan_kuwait.mp3': 'Adhan_Kuwait_(أذان_الكويت).mp3',
+              'adhan_dubai.mp3': 'Adhan_Dubai_UAE_(أذان_دبي_الإمارات).mp3',
+              'adhan_fajr.mp3': 'Adhan_Fajr_Al_Haram_Al_Maki_(أذان_الفجر_الحرم_المكي).mp3',
+          }
+          for out, src in files.items():
+              url = base + quote(src, safe='/()_-')
+              subprocess.run(['curl', '-fsSL', '--retry', '3', url, '-o', f'android/app/src/main/res/raw/{out}'], check=True)
+              assert Path(f'android/app/src/main/res/raw/{out}').stat().st_size > 1000
+          print('Adhan sounds downloaded:', ', '.join(files))
           PY
 
       - name: Configure Android
@@ -58,14 +75,20 @@ jobs:
               s = s.replace(marker, marker + permissions)
           s = s.replace('android:label="hudaway"', 'android:label="HudaWay"')
           s = s.replace('android:label="hudaway_android"', 'android:label="HudaWay"')
+          if 'android:icon=' in s:
+              import re
+              s = re.sub(r'android:icon="[^"]+"', 'android:icon="@drawable/hudaway_logo"', s, count=1)
+          else:
+              s = s.replace('android:label="HudaWay"', 'android:label="HudaWay"\n        android:icon="@drawable/hudaway_logo"', 1)
           manifest.write_text(s)
+
+          drawable = Path('android/app/src/main/res/drawable')
+          drawable.mkdir(parents=True, exist_ok=True)
+          (drawable / 'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">\n<path android:fillColor="#061A14" android:pathData="M0,0h108v108h-108z"/>\n<path android:fillColor="#0B5D45" android:pathData="M54,10A44,44 0,1 0,54 98A44,44 0,1 0,54 10"/>\n<path android:fillColor="#D6A63A" android:pathData="M61,24A29,29 0,1 0,61 84A29,29 0,1 1,61 24"/>\n<path android:fillColor="#0B5D45" android:pathData="M70,27A25,25 0,1 0,70 81A25,25 0,1 1,70 27"/>\n<path android:fillColor="#D6A63A" android:pathData="M77,31l2.8,7.1 7.6,0.5 -5.8,4.8 1.9,7.4 -6.5,-4.1 -6.5,4.1 1.9,-7.4 -5.8,-4.8 7.6,-0.5z"/>\n</vector>\n''')
 
           gradle = Path('android/app/build.gradle.kts')
           x = gradle.read_text()
           x = x.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36')
-
-          # flutter_local_notifications requires Android core-library desugaring.
-          # Force a single, valid configuration even if the generated Flutter template changes.
           lines = [line for line in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in line and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in line]
           x = '\n'.join(lines) + '\n'
           if 'isCoreLibraryDesugaringEnabled = true' not in x:
@@ -86,11 +109,7 @@ jobs:
 
       - name: Run tests
         run: |
-          if [ -d test ]; then
-            flutter test
-          else
-            echo "No test directory yet; continuing to release build."
-          fi
+          if [ -d test ]; then flutter test; else echo "No test directory yet; continuing to release build."; fi
 
       - name: Build release APKs
         run: flutter build apk --release --split-per-abi
@@ -115,6 +134,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" build/app/outputs/flutter-apk/*.apk \
-            --title "HudaWay ${GITHUB_REF_NAME}" \
-            --generate-notes
+          gh release create "${GITHUB_REF_NAME}" build/app/outputs/flutter-apk/*.apk --title "HudaWay ${GITHUB_REF_NAME}" --generate-notes
