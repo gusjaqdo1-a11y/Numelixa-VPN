@@ -16,33 +16,40 @@ class QuranService {
   static const String _url = 'https://api.alquran.cloud/v1/quran/quran-uthmani';
 
   List<Surah> _parse(dynamic body) {
-    final dynamic root = body is String ? jsonDecode(body) : body;
+    dynamic root = body is String ? jsonDecode(body.replaceFirst('\ufeff', '')) : body;
     if (root is! Map) throw const FormatException('Invalid Quran response');
-    final dynamic data = root['data'];
-    if (data is! Map) throw const FormatException('Missing Quran data');
-    final dynamic rawSurahs = data['surahs'];
-    if (rawSurahs is! List || rawSurahs.length != 114) {
-      throw const FormatException('Expected 114 Surahs');
+    dynamic rawSurahs;
+    final data = root['data'];
+    if (data is Map) rawSurahs = data['surahs'];
+    if (rawSurahs is! List) rawSurahs = root['surahs'];
+    if (rawSurahs is! List || rawSurahs.length != 114) throw const FormatException('Expected exactly 114 Surahs');
+    final surahs = <Surah>[];
+    for (final item in rawSurahs) {
+      if (item is! Map) throw const FormatException('Invalid Surah entry');
+      final map = Map<String, dynamic>.from(item);
+      final ayahs = map['ayahs'];
+      if (ayahs is! List || ayahs.isEmpty) throw const FormatException('Invalid Ayah data');
+      surahs.add(Surah.fromJson(map));
     }
-    final surahs = rawSurahs
-        .map((e) => Surah.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
     final total = surahs.fold<int>(0, (sum, s) => sum + s.verses.length);
-    if (total < 6200) throw const FormatException('Incomplete Quran dataset');
+    if (total != 6236) throw FormatException('Quran Ayah count is $total, expected 6236');
     return surahs;
   }
 
   Future<List<Surah>> load() async {
+    Object? localError;
     try {
-      return _parse(await rootBundle.loadString('assets/data/quran.json'));
-    } catch (_) {
-      final response = await http
-          .get(Uri.parse(_url), headers: const {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 20));
-      if (response.statusCode != 200) {
-        throw Exception('Quran data unavailable (${response.statusCode})');
-      }
+      final local = await rootBundle.loadString('assets/data/quran.json');
+      return _parse(local);
+    } catch (e) {
+      localError = e;
+    }
+    try {
+      final response = await http.get(Uri.parse(_url), headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 20));
+      if (response.statusCode != 200) throw Exception('HTTP ${response.statusCode}');
       return _parse(response.body);
+    } catch (e) {
+      throw Exception('Quran unavailable. Bundled: $localError; online: $e');
     }
   }
 }
@@ -51,19 +58,9 @@ class PrayerService {
   Future<Position?> location() async {
     if (!await Geolocator.isLocationServiceEnabled()) return null;
     var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      return null;
-    }
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 25,
-      ),
-    ).timeout(const Duration(seconds: 15));
+    if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return null;
+    return Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.best, distanceFilter: 10)).timeout(const Duration(seconds: 20));
   }
 
   Future<tz.Location> localZone() async {
@@ -78,22 +75,27 @@ class PrayerService {
     }
   }
 
-  List<PrayerEntry> calculate(
-    double latitude,
-    double longitude,
-    DateTime date, {
-    Madhab madhab = Madhab.shafi,
-  }) {
-    final coordinates = Coordinates(latitude, longitude);
-    final params = CalculationMethodParameters.muslimWorldLeague();
+  CalculationParameters _params(String method, Madhab madhab, Coordinates coordinates) {
+    final params = switch (method) {
+      'Egyptian' => CalculationMethodParameters.egyptian(),
+      'Karachi' => CalculationMethodParameters.karachi(),
+      'Umm al-Qura' => CalculationMethodParameters.ummAlQura(),
+      'Dubai' => CalculationMethodParameters.dubai(),
+      'Qatar' => CalculationMethodParameters.qatar(),
+      'Kuwait' => CalculationMethodParameters.kuwait(),
+      'ISNA' => CalculationMethodParameters.northAmerica(),
+      _ => CalculationMethodParameters.muslimWorldLeague(),
+    };
     params.madhab = madhab;
     params.highLatitudeRule = HighLatitudeRule.recommended(coordinates);
-    final times = PrayerTimes(
-      coordinates: coordinates,
-      date: date,
-      calculationParameters: params,
-      precision: true,
-    );
+    return params;
+  }
+
+  List<PrayerEntry> calculate(double latitude, double longitude, DateTime date, {String method = 'Muslim World League', Madhab madhab = Madhab.shafi}) {
+    final coordinates = Coordinates(latitude, longitude);
+    final params = _params(method, madhab, coordinates);
+    final localDate = tz.TZDateTime(tz.local, date.year, date.month, date.day);
+    final times = PrayerTimes(coordinates: coordinates, date: localDate, calculationParameters: params, precision: true);
     final zone = tz.local;
     DateTime local(DateTime value) => tz.TZDateTime.from(value.toUtc(), zone);
     return [
@@ -108,8 +110,7 @@ class PrayerService {
 }
 
 class AlarmService {
-  final FlutterLocalNotificationsPlugin plugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin plugin = FlutterLocalNotificationsPlugin();
   bool ready = false;
 
   Future<void> init() async {
@@ -118,53 +119,38 @@ class AlarmService {
       final info = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(info.identifier));
     } catch (_) {}
-
-    const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-    );
+    const settings = InitializationSettings(android: AndroidInitializationSettings('@drawable/hudaway_logo'));
     await plugin.initialize(settings: settings);
-    final android = plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final android = plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await android?.requestNotificationsPermission();
     await android?.requestExactAlarmsPermission();
     ready = true;
   }
 
+  static Future<String> sound() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString('adhanSound') ?? 'adhan_kuwait';
+  }
+
+  static Future<void> setSound(String value) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('adhanSound', value);
+  }
+
   Future<void> schedulePrayer(PrayerEntry prayer) async {
     if (!ready || prayer.name == 'Sunrise') return;
+    final selected = await sound();
     final now = tz.TZDateTime.now(tz.local);
-    var date = tz.TZDateTime(
-      tz.local,
-      prayer.time.year,
-      prayer.time.month,
-      prayer.time.day,
-      prayer.time.hour,
-      prayer.time.minute,
-    );
-    if (!date.isAfter(now)) {
-      date = tz.TZDateTime(
-        tz.local,
-        now.year,
-        now.month,
-        now.day,
-        prayer.time.hour,
-        prayer.time.minute,
-      ).add(const Duration(days: 1));
-    }
+    var date = tz.TZDateTime(tz.local, prayer.time.year, prayer.time.month, prayer.time.day, prayer.time.hour, prayer.time.minute);
+    if (!date.isAfter(now)) date = tz.TZDateTime(tz.local, now.year, now.month, now.day, prayer.time.hour, prayer.time.minute).add(const Duration(days: 1));
+    final soundName = selected == 'adhan_fajr' ? 'adhan_fajr' : selected == 'adhan_dubai' ? 'adhan_dubai' : 'adhan_kuwait';
     await plugin.zonedSchedule(
       id: prayer.name.hashCode.abs() % 100000,
       title: 'HudaWay • ${prayer.name}',
       body: 'Waqtiga salaadda ${prayer.name} ayaa galay.',
       scheduledDate: date,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'adhan_prayer',
-          'Adhan & Prayer Times',
-          channelDescription: 'Prayer time notifications',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-        ),
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails('adhan_$soundName', 'Adhan • ${soundName.replaceAll('_', ' ')}', channelDescription: 'HudaWay prayer Adhan', importance: Importance.max, priority: Priority.max, playSound: true, sound: RawResourceAndroidNotificationSound(soundName)),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
@@ -173,31 +159,15 @@ class AlarmService {
   Future<void> scheduleAll(List<PrayerEntry> prayers) async {
     if (!ready) return;
     await plugin.cancelAll();
-    for (final prayer in prayers) {
-      await schedulePrayer(prayer);
-    }
+    for (final prayer in prayers) await schedulePrayer(prayer);
   }
 }
 
 class Preferences {
-  static Future<void> saveLastAyah(int surah, int ayah) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setInt('lastSurah', surah);
-    await p.setInt('lastAyah', ayah);
-  }
-
-  static Future<(int, int)> lastAyah() async {
-    final p = await SharedPreferences.getInstance();
-    return (p.getInt('lastSurah') ?? 1, p.getInt('lastAyah') ?? 1);
-  }
-
-  static Future<void> setPrayerMethod(String value) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString('prayerMethod', value);
-  }
-
-  static Future<String> prayerMethod() async {
-    final p = await SharedPreferences.getInstance();
-    return p.getString('prayerMethod') ?? 'MWL';
-  }
+  static Future<void> saveLastAyah(int surah, int ayah) async { final p = await SharedPreferences.getInstance(); await p.setInt('lastSurah', surah); await p.setInt('lastAyah', ayah); }
+  static Future<(int, int)> lastAyah() async { final p = await SharedPreferences.getInstance(); return (p.getInt('lastSurah') ?? 1, p.getInt('lastAyah') ?? 1); }
+  static Future<void> setPrayerMethod(String value) async { final p = await SharedPreferences.getInstance(); await p.setString('prayerMethod', value); }
+  static Future<String> prayerMethod() async { final p = await SharedPreferences.getInstance(); return p.getString('prayerMethod') ?? 'Muslim World League'; }
+  static Future<void> setMadhab(String value) async { final p = await SharedPreferences.getInstance(); await p.setString('madhab', value); }
+  static Future<String> madhab() async { final p = await SharedPreferences.getInstance(); return p.getString('madhab') ?? 'Shafi'; }
 }
