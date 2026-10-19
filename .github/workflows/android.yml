@@ -62,20 +62,30 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          manifest=Path('android/app/src/main/AndroidManifest.xml'); s=manifest.read_text(); marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+          manifest=Path('android/app/src/main/AndroidManifest.xml')
+          s=manifest.read_text()
+          marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
           permissions='''\n<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n'''
-          if 'ACCESS_FINE_LOCATION' not in s:s=s.replace(marker,marker+permissions)
-          s=re.sub(r'android:label="[^"]+"','android:label="HudaWay"',s,count=1); s=re.sub(r'android:icon="[^"]+"','android:icon="@drawable/hudaway_logo"',s,count=1); manifest.write_text(s)
-          drawable=Path('android/app/src/main/res/drawable'); drawable.mkdir(parents=True,exist_ok=True)
+          if 'ACCESS_FINE_LOCATION' not in s:
+              s=s.replace(marker,marker+permissions)
+          s=re.sub(r'android:label="[^"]+"','android:label="HudaWay"',s,count=1)
+          s=re.sub(r'android:icon="[^"]+"','android:icon="@drawable/hudaway_logo"',s,count=1)
+          manifest.write_text(s)
+          drawable=Path('android/app/src/main/res/drawable')
+          drawable.mkdir(parents=True,exist_ok=True)
           (drawable/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#D96B00" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#FFFFFF" android:pathData="M54,18A36,36 0,1 0,54 90A36,36 0,1 0,54 18"/><path android:fillColor="#D96B00" android:pathData="M60,25A29,29 0,1 0,60 83A29,29 0,1 1,60 25"/><path android:fillColor="#FFFFFF" android:pathData="M25,61c5,-17 16,-27 29,-27 13,0 24,10 29,27H25zM28,62h52v25H28zM20,87h68v8H20z"/></vector>''')
-          gradle=Path('android/app/build.gradle.kts'); x=gradle.read_text().replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36')
-          x='\n'.join([line for line in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in line and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in line])+'\n'
+
+          gradle=Path('android/app/build.gradle.kts')
+          x=gradle.read_text()
+          x=x.replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36')
+          x=re.sub(r'\n?\s*isCoreLibraryDesugaringEnabled\s*=\s*true','',x)
+          x=re.sub(r'\n?\s*coreLibraryDesugaring\("com\.android\.tools:desugar_jdk_libs:[^"]+"\)','',x)
           x=x.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1)
-          dep='coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")'
-          if dep not in x:
-              if 'dependencies {' in x:x=x.replace('dependencies {','dependencies {\n    '+dep,1)
-              else:x+='\n\ndependencies {\n    '+dep+'\n}\n'
+          x += '\n\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")\n}\n'
           gradle.write_text(x)
+          check=gradle.read_text()
+          assert 'isCoreLibraryDesugaringEnabled = true' in check
+          assert 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")' in check
           PY
       - name: Install dependencies
         run: flutter pub get
