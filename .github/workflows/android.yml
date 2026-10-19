@@ -21,17 +21,16 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import re
           app = Path('lib/app.dart')
           s = app.read_text()
-          pattern = r"Text\('\$\{p\.name\}\\\s*\n\s*\$\{p\.arabic\}'\)"
-          fixed, count = re.subn(pattern, "Text('${p.name}\\\\n${p.arabic}')", s)
-          if count != 1:
-              raise SystemExit(f'Expected one malformed prayer label, found {count}')
-          app.write_text(fixed)
+          bad = '${p.name}\\\n${p.arabic}'
+          good = '${p.name}\\n${p.arabic}'
+          if bad not in s:
+              raise SystemExit('Expected malformed prayer label was not found')
+          s = s.replace(bad, good, 1)
+          app.write_text(s)
           services = Path('lib/services.dart')
-          ss = services.read_text()
-          ss = ss.replace('plugin.cancel(9901)', 'plugin.cancel(id: 9901)')
+          ss = services.read_text().replace('plugin.cancel(9901)', 'plugin.cancel(id: 9901)')
           services.write_text(ss)
           PY
           git config user.name 'github-actions[bot]'
