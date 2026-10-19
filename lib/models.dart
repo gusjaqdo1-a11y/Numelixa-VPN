@@ -6,18 +6,42 @@ class Surah {
   final int ayahs;
   final String revelationType;
   final List<Ayah> verses;
+
   const Surah({required this.number, required this.name, required this.englishName, required this.translation, required this.ayahs, required this.revelationType, required this.verses});
-  factory Surah.fromJson(Map<String, dynamic> json) => Surah(number: json['number'] as int, name: json['name'] as String, englishName: json['englishName'] as String, translation: json['englishNameTranslation'] as String? ?? '', ayahs: json['numberOfAyahs'] as int, revelationType: json['revelationType'] as String? ?? '', verses: ((json['ayahs'] as List?) ?? const []).map((e) => Ayah.fromJson(e as Map<String, dynamic>)).toList());
+
+  factory Surah.fromJson(Map<String, dynamic> json) {
+    final rawAyahs = json['ayahs'];
+    final list = rawAyahs is List ? rawAyahs : const [];
+    return Surah(
+      number: _int(json['number']),
+      name: _string(json['name']),
+      englishName: _string(json['englishName']),
+      translation: _string(json['englishNameTranslation']),
+      ayahs: _int(json['numberOfAyahs']),
+      revelationType: _string(json['revelationType']),
+      verses: list.whereType<Map>().map((e) => Ayah.fromJson(Map<String, dynamic>.from(e))).toList(),
+    );
+  }
 }
+
 class Ayah {
   final int number;
   final int numberInSurah;
   final String text;
   final int page;
   final int juz;
+
   const Ayah({required this.number, required this.numberInSurah, required this.text, required this.page, required this.juz});
-  factory Ayah.fromJson(Map<String, dynamic> json) => Ayah(number: json['number'] as int, numberInSurah: json['numberInSurah'] as int, text: json['text'] as String, page: json['page'] as int? ?? 0, juz: json['juz'] as int? ?? 0);
+
+  factory Ayah.fromJson(Map<String, dynamic> json) => Ayah(
+    number: _int(json['number']),
+    numberInSurah: _int(json['numberInSurah']),
+    text: _string(json['text']),
+    page: _int(json['page']),
+    juz: _int(json['juz']),
+  );
 }
+
 class PrayerEntry {
   final String name;
   final String arabic;
@@ -25,6 +49,7 @@ class PrayerEntry {
   final bool enabled;
   const PrayerEntry({required this.name, required this.arabic, required this.time, this.enabled = true});
 }
+
 class DuaItem {
   final String title;
   final String arabic;
@@ -32,3 +57,6 @@ class DuaItem {
   final int target;
   const DuaItem({required this.title, required this.arabic, required this.meaning, this.target = 1});
 }
+
+int _int(dynamic value) => value is num ? value.toInt() : int.tryParse('$value') ?? 0;
+String _string(dynamic value) => value?.toString() ?? '';
