@@ -94,7 +94,7 @@ jobs:
 
           drawable = Path('android/app/src/main/res/drawable')
           drawable.mkdir(parents=True, exist_ok=True)
-          (drawable/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#061A14" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#0B5D45" android:pathData="M54,10A44,44 0,1 0,54 98A44,44 0,1 0,54 10"/><path android:fillColor="#D6A63A" android:pathData="M61,24A29,29 0,1 0,61 84A29,29 0,1 1,61 24"/><path android:fillColor="#0B5D45" android:pathData="M70,27A25,25 0,1 0,70 81A25,25 0,1 1,70 27"/><path android:fillColor="#D6A63A" android:pathData="M77,31l2.8,7.1 7.6,0.5 -5.8,4.8 1.9,7.4 -6.5,-4.1 -6.5,4.1 1.9,-7.4 -5.8,-4.8 7.6,-0.5z"/> </vector>''')
+          (drawable/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#D96B00" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#FFFFFF" android:pathData="M54,18A36,36 0,1 0,54 90A36,36 0,1 0,54 18"/><path android:fillColor="#D96B00" android:pathData="M60,25A29,29 0,1 0,60 83A29,29 0,1 1,60 25"/><path android:fillColor="#FFFFFF" android:pathData="M25,61c5,-17 16,-27 29,-27 13,0 24,10 29,27H25zM28,62h52v25H28zM20,87h68v8H20z"/><path android:fillColor="#D96B00" android:pathData="M31,67h46v4H31zM29,76h50v4H29zM26,85h56v4H26z"/><path android:fillColor="#FFFFFF" android:pathData="M54,34V22h-3v12z"/><path android:fillColor="#FFFFFF" android:pathData="M54,12a8,8 0,1 0,8 8 10,10 0,1 1,-8,-8z"/><path android:fillColor="#FFFFFF" android:pathData="M54,16l2,4 5,1 -4,3 1,5 -4,-3 -4,3 1,-5 -4,-3 5,-1z"/></vector>''')
 
           gradle = Path('android/app/build.gradle.kts')
           x = gradle.read_text().replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36')
@@ -139,7 +139,7 @@ jobs:
           if gh release view v1.0.0 >/dev/null 2>&1; then
             echo 'HudaWay v1.0.0 already exists; skipping release creation.'
           else
-            gh release create v1.0.0 build/app/outputs/flutter-apk/*.apk --target "$GITHUB_SHA" --title "HudaWay v1.0.0" --notes "First stable Android release.\n\nFeatures:\n- Complete Quran\n- Prayer times\n- Adhan alarms\n- Qibla\n- Dhikr / Tasbeeh\n- Duas & Adhkar\n- Ramadan tools\n- Quran audio\n- Dark Muslim UI"
+            gh release create v1.0.0 build/app/outputs/flutter-apk/*.apk --target "$GITHUB_SHA" --title "HudaWay v1.0.0" --notes "First stable HudaWay release.\n\n- Complete Quran with continuous Mushaf-style reader\n- Full-surah Quran audio\n- GPS-based prayer times and country/city display\n- Qibla compass with live phone heading\n- Multi-sound Adhan and exact prayer alarms\n- Hijri calendar and optional lock-screen calendar notification\n- Expanded Duas & Adhkar\n- Dhikr / Tasbeeh\n- Ramadan unlocks automatically in Hijri month 9\n- Premium dark UI and HudaWay branding"
           fi
       - name: Create GitHub Release for version tag
         if: startsWith(github.ref, 'refs/tags/v')
