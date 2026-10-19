@@ -21,14 +21,14 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          import re
           app = Path('lib/app.dart')
           s = app.read_text()
-          bad = '${p.name}\\\n${p.arabic}'
-          good = '${p.name}\\n${p.arabic}'
-          if bad not in s:
-              raise SystemExit('Expected malformed prayer label was not found')
-          s = s.replace(bad, good, 1)
-          app.write_text(s)
+          pattern = re.compile(r"Text\('\$\{p\.name\}.*?\$\{p\.arabic\}'\)", re.S)
+          fixed, count = pattern.subn(lambda _: "Text('${p.name}\\\\n${p.arabic}')", s, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one prayer label expression, found {count}')
+          app.write_text(fixed)
           services = Path('lib/services.dart')
           ss = services.read_text().replace('plugin.cancel(9901)', 'plugin.cancel(id: 9901)')
           services.write_text(ss)
