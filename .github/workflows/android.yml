@@ -21,24 +21,17 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           app=Path('lib/app.dart'); lines=app.read_text().splitlines()
-          rstart=next(i for i,line in enumerate(lines) if line.startswith('class ReaderPage'))
-          rend=next(i for i in range(rstart,len(lines)) if lines[i].startswith('class PrayerPage'))
-          reader="class ReaderPage extends StatelessWidget { final Surah surah; const ReaderPage({super.key,required this.surah}); @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(surah.englishName)),body:ListView(padding:const EdgeInsets.all(18),children:[Text(surah.name,textAlign:TextAlign.center,style:const TextStyle(fontSize:34,fontWeight:FontWeight.bold)),Text(surah.translation,textAlign:TextAlign.center),const SizedBox(height:18),Text(surah.verses.map((a)=>'${a.text} ۝${a.numberInSurah}').join('  '),textAlign:TextAlign.right,style:const TextStyle(fontSize:31,height:2.1))])); }"
-          lines[rstart:rend]=[reader]
-          pstart=next(i for i,line in enumerate(lines) if line.startswith('class PrayerPage'))
-          pend=next(i for i in range(pstart,len(lines)) if lines[i].startswith('class QiblaPage'))
-          prayer="class PrayerPage extends StatelessWidget { final AlarmService alarms; const PrayerPage({super.key,required this.alarms}); @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Prayer Times')),body:Column(children:[Expanded(child:DashboardPage(alarms:alarms)),Padding(padding:const EdgeInsets.all(12),child:OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms))),icon:const Icon(Icons.notifications_active),label:const Text('Adhan & Alarm Settings')))])); }"
-          lines[pstart:pend]=[prayer]
+          rstart=next(i for i,line in enumerate(lines) if line.startswith('class ReaderPage')); rend=next(i for i in range(rstart,len(lines)) if lines[i].startswith('class PrayerPage'))
+          reader="class ReaderPage extends StatelessWidget { final Surah surah; const ReaderPage({super.key,required this.surah}); @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(surah.englishName)),body:ListView(padding:const EdgeInsets.all(18),children:[Text(surah.name,textAlign:TextAlign.center,style:const TextStyle(fontSize:34,fontWeight:FontWeight.bold)),Text(surah.translation,textAlign:TextAlign.center),const SizedBox(height:18),Text(surah.verses.map((a)=>'${a.text} ۝${a.numberInSurah}').join('  '),textAlign:TextAlign.right,style:const TextStyle(fontSize:31,height:2.1))])); }"; lines[rstart:rend]=[reader]
+          pstart=next(i for i,line in enumerate(lines) if line.startswith('class PrayerPage')); pend=next(i for i in range(pstart,len(lines)) if lines[i].startswith('class QiblaPage'))
+          prayer="class PrayerPage extends StatelessWidget { final AlarmService alarms; const PrayerPage({super.key,required this.alarms}); @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Prayer Times')),body:Column(children:[Expanded(child:DashboardPage(alarms:alarms)),Padding(padding:const EdgeInsets.all(12),child:OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms))),icon:const Icon(Icons.notifications_active),label:const Text('Adhan & Alarm Settings')))])); }"; lines[pstart:pend]=[prayer]
+          mstart=next(i for i,line in enumerate(lines) if line.startswith('class MorePage')); mend=next(i for i in range(mstart,len(lines)) if lines[i].startswith('class HijriDate'))
+          more="class MorePage extends StatelessWidget { final AlarmService alarms; const MorePage({super.key,required this.alarms}); @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(18),children:[Row(children:[const BrandMark(size:56),const SizedBox(width:12),const Text('Settings',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900))]),const SizedBox(height:18),appBox(const Text('Prayer times use your GPS location and the selected calculation method.')),ListTile(leading:const Icon(Icons.notifications_active,color:gold),title:const Text('Adhan & Alarm Settings'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>AlarmSettingsPage(alarms:alarms)))),ListTile(leading:const Icon(Icons.explore,color:gold),title:const Text('Qibla Finder'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const QiblaPage()))),ListTile(leading:const Icon(Icons.favorite,color:gold),title:const Text('Duas & Adhkar'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const DuasPage()))),ListTile(leading:const Icon(Icons.nightlight,color:gold),title:const Text('Ramadan'),onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const RamadanPage()))) ]); }"; lines[mstart:mend]=[more]
           app.write_text('\n'.join(lines)+'\n')
           services=Path('lib/services.dart'); services.write_text(services.read_text().replace('visibility: NotificationVisibility.public));','visibility: NotificationVisibility.public)));'))
           PY
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if ! git diff --quiet -- lib/app.dart lib/services.dart; then
-            git add lib/app.dart lib/services.dart
-            git commit -m 'fix: replace Reader and Prayer pages with stable compile-safe screens [skip ci]'
-            git push
-          fi
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --quiet -- lib/app.dart lib/services.dart; then git add lib/app.dart lib/services.dart; git commit -m 'fix: replace broken Reader Prayer and Settings pages [skip ci]'; git push; fi
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -51,12 +44,8 @@ jobs:
           rm -rf /tmp/hudaway_android
           flutter create /tmp/hudaway_android --platforms android --org com.hudaway --project-name hudaway
           test -f /tmp/hudaway_android/android/app/src/main/AndroidManifest.xml
-          rm -rf android
-          cp -a /tmp/hudaway_android/android ./android
-          cp /tmp/hudaway_android/.metadata ./.metadata
-          cp /tmp/hudaway_android/analysis_options.yaml ./analysis_options.yaml
-          test -f android/app/src/main/AndroidManifest.xml
-          test -f android/app/build.gradle.kts
+          rm -rf android; cp -a /tmp/hudaway_android/android ./android; cp /tmp/hudaway_android/.metadata ./.metadata; cp /tmp/hudaway_android/analysis_options.yaml ./analysis_options.yaml
+          test -f android/app/src/main/AndroidManifest.xml; test -f android/app/build.gradle.kts
       - name: Prepare Quran and Adhan assets
         run: |
           set -euo pipefail
@@ -64,17 +53,15 @@ jobs:
           curl -fsSL --retry 3 https://api.alquran.cloud/v1/quran/quran-uthmani -o assets/data/quran.json
           python3 - <<'PY'
           import json
-          data=json.load(open('assets/data/quran.json',encoding='utf-8')); surahs=data.get('data',{}).get('surahs',[])
-          assert len(surahs)==114; assert sum(len(s.get('ayahs',[])) for s in surahs)==6236
+          d=json.load(open('assets/data/quran.json',encoding='utf-8')); s=d.get('data',{}).get('surahs',[]); assert len(s)==114; assert sum(len(x.get('ayahs',[])) for x in s)==6236
           PY
           python3 - <<'PY'
           from pathlib import Path
           from urllib.parse import quote
           import subprocess
-          base='https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main/'
-          files={'adhan_kuwait.mp3':'Adhan_Kuwait_(أذان_الكويت).mp3','adhan_dubai.mp3':'Adhan_Dubai_UAE_(أذان_دبي_الإمارات).mp3','adhan_fajr.mp3':'Adhan_Fajr_Al_Haram_Al_Maki_(أذان_الفجر_الحرم_المكي).mp3'}
-          for out,src in files.items():
-            target=Path('android/app/src/main/res/raw')/out; subprocess.run(['curl','-fsSL','--retry','3',base+quote(src,safe='/()_-'),'-o',str(target)],check=True); assert target.stat().st_size>1000
+          b='https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main/'; f={'adhan_kuwait.mp3':'Adhan_Kuwait_(أذان_الكويت).mp3','adhan_dubai.mp3':'Adhan_Dubai_UAE_(أذان_دبي_الإمارات).mp3','adhan_fajr.mp3':'Adhan_Fajr_Al_Haram_Al_Maki_(أذان_الفجر_الحرم_المكي).mp3'}
+          for o,n in f.items():
+            t=Path('android/app/src/main/res/raw')/o; subprocess.run(['curl','-fsSL','--retry','3',b+quote(n,safe='/()_-'),'-o',str(t)],check=True); assert t.stat().st_size>1000
           PY
       - name: Configure Android
         run: |
@@ -82,13 +69,11 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          m=Path('android/app/src/main/AndroidManifest.xml'); s=m.read_text(); marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
-          perms='''\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n'''
+          m=Path('android/app/src/main/AndroidManifest.xml'); s=m.read_text(); marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'; perms='''\n<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n''';
           if 'ACCESS_FINE_LOCATION' not in s:s=s.replace(marker,marker+perms)
           s=re.sub(r'android:label="[^"]+"','android:label="HudaWay"',s,count=1); s=re.sub(r'android:icon="[^"]+"','android:icon="@drawable/hudaway_logo"',s,count=1); m.write_text(s)
-          d=Path('android/app/src/main/res/drawable'); d.mkdir(parents=True,exist_ok=True)
-          (d/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#D96B00" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#FFFFFF" android:pathData="M54,18A36,36 0,1 0,54 90A36,36 0,1 0,54 18"/><path android:fillColor="#D96B00" android:pathData="M60,25A29,29 0,1 0,60 83A29,29 0,1 1,60 25"/><path android:fillColor="#FFFFFF" android:pathData="M25,61c5,-17 16,-27 29,-27 13,0 24,10 29,27H25zM28,62h52v25H28zM20,87h68v8H20z"/><path android:fillColor="#D96B00" android:pathData="M31,67h46v4H31zM29,76h50v4H29zM26,85h56v4H26z"/></vector>''')
-          g=Path('android/app/build.gradle.kts'); x=g.read_text().replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36'); x='\n'.join([line for line in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in line and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in line])+'\n'; x=x.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1); x=x.replace('dependencies {','dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',1); g.write_text(x)
+          d=Path('android/app/src/main/res/drawable'); d.mkdir(parents=True,exist_ok=True); (d/'hudaway_logo.xml').write_text('''<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#D96B00" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#FFFFFF" android:pathData="M54,18A36,36 0,1 0,54 90A36,36 0,1 0,54 18"/><path android:fillColor="#D96B00" android:pathData="M60,25A29,29 0,1 0,60 83A29,29 0,1 1,60 25"/><path android:fillColor="#FFFFFF" android:pathData="M25,61c5,-17 16,-27 29,-27 13,0 24,10 29,27H25zM28,62h52v25H28zM20,87h68v8H20z"/></vector>''')
+          g=Path('android/app/build.gradle.kts'); x=g.read_text().replace('compileSdk = flutter.compileSdkVersion','compileSdk = 36'); x='\n'.join([z for z in x.splitlines() if 'isCoreLibraryDesugaringEnabled' not in z and 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs' not in z])+'\n'; x=x.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1); x=x.replace('dependencies {','dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',1); g.write_text(x)
           PY
       - name: Install dependencies
         run: flutter pub get
@@ -100,9 +85,7 @@ jobs:
         run: flutter build apk --release --split-per-abi
       - name: Verify APK outputs
         run: |
-          test -s build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-          test -s build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-          test -s build/app/outputs/flutter-apk/app-x86_64-release.apk
+          test -s build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk; test -s build/app/outputs/flutter-apk/app-arm64-v8a-release.apk; test -s build/app/outputs/flutter-apk/app-x86_64-release.apk
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
